@@ -1,20 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Fraunces, Manrope } from "next/font/google";
 
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-manrope",
-  display: "swap",
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "SMART@Home · Clinician view",
@@ -24,7 +11,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className={`${manrope.variable} ${fraunces.variable}`}>
+    <html lang="en">
+      <head>
+        <link
+          rel="stylesheet"
+          href="/_ds/organic-e6834d6e-fce6-4963-9562-6075a72a4e0f/styles.css"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
