@@ -33,6 +33,7 @@ export type SubmissionView = {
   time: string;
   blank: boolean;
   lines: string[];
+  detailLines: string[];
   counts: boolean;
 };
 
@@ -472,6 +473,18 @@ export function buildClinicianModel(
           if (!item) return "";
           const answer = formatAnswer(item, response.value);
           return answer ? `${item.text}: ${answer}` : "";
+        })
+        .filter(Boolean),
+      detailLines: submission.responses
+        .map((response) => {
+          const item = byId.get(response.questionId);
+          if (!item) return "";
+          const answer = formatAnswer(item, response.value);
+          if (!answer) return "";
+          if (response.questionId === feelingQ?.questionId && answer === feeling) return "";
+          if (response.questionId === symptomQ?.questionId &&
+            (answer === symptoms.join(", ") || (answer === "None of these" && symptoms.length === 0))) return "";
+          return `${item.text}: ${answer}`;
         })
         .filter(Boolean),
     }));
