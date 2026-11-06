@@ -13,8 +13,8 @@ import { SummaryTab } from "./tabs/SummaryTab";
 import {
   GENERAL_MODULES,
   STORAGE_KEY,
-  moduleAvailable,
   readSpecialistViews,
+  visibleModules,
   type Audience,
   type PageId,
   type SpecialistView,
@@ -72,7 +72,7 @@ export function ClinicianApp({ model, patients, initialPage = "overview" }: { mo
   function downloadOverview() {
     setDownloadError("");
     setDownloadingOverview(true);
-    const visible = modules.filter((id) => moduleAvailable(id, model));
+    const visible = visibleModules(modules, model);
     void downloadOverviewPdf(model, visible, selectedSpecialistView?.name ?? "General")
       .catch(() => setDownloadError("Overview PDF could not be created."))
       .finally(() => setDownloadingOverview(false));

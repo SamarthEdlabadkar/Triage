@@ -2,7 +2,7 @@
 import type { ClinicianModel } from "@/lib/clinician-model";
 import type { Chart } from "../chart";
 import type { Audience, WidgetId } from "../view-config";
-import { moduleAvailable, TRACKER_MODULES, WIDE_MODULES } from "../view-config";
+import { visibleModules, TRACKER_MODULES, WIDE_MODULES } from "../view-config";
 import { ViewSkeleton } from "../ViewSkeleton";
 import { PatientView } from "../views/PatientView";
 import { SnapshotWidget } from "../widgets/SnapshotWidget";
@@ -29,7 +29,7 @@ export function OverviewTab({
     return <PatientView model={model} chart={chart} onOpen={(index) => onOpenDay(index)} />;
   }
 
-  const visible = modules.filter((id) => moduleAvailable(id, model));
+  const visible = visibleModules(modules, model);
   return (
     <ViewSkeleton variant="clinician">
       {visible.map((id) => (

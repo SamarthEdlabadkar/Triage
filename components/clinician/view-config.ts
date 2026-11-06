@@ -10,18 +10,18 @@ export const WIDGETS: Record<WidgetId, { name: string; desc: string }> = {
   snapshot: { name: "Overview and calendar", desc: "Key reported measures beside a month calendar" },
   changed: { name: "What changed", desc: "Last 14 days versus the 14 before" },
   lung: { name: "Lung function", desc: "Quality-aware FEV1 chart" },
+  timeline: { name: "Synchronized timeline", desc: "Measures aligned by date" },
   compare: { name: "Window comparison", desc: "The two halves of this window" },
   review: { name: "Review points", desc: "Conflicts, gaps, and record notes" },
-  timeline: { name: "Synchronized timeline", desc: "Measures aligned by date" },
   adverse: { name: "Adverse Event Reporter", desc: "Reported events and impact" },
   diabetes: { name: "Diabetes Tracker", desc: "Reported glucose and check-ins" },
   ibd: { name: "IBD Tracker", desc: "Digestive symptoms and responses" },
 };
 
 export const MODULE_IDS = Object.keys(WIDGETS) as WidgetId[];
-export const REVIEW_MODULES: WidgetId[] = ["snapshot", "changed", "lung", "compare", "review", "timeline"];
+export const REVIEW_MODULES: WidgetId[] = ["snapshot", "changed", "lung", "timeline", "compare", "review"];
 export const TRACKER_MODULES: WidgetId[] = ["adverse", "diabetes", "ibd"];
-export const GENERAL_MODULES: WidgetId[] = ["snapshot", ...TRACKER_MODULES, "changed", "lung", "compare", "review", "timeline"];
+export const GENERAL_MODULES: WidgetId[] = ["snapshot", ...TRACKER_MODULES, "changed", "lung", "timeline", "compare", "review"];
 export const WIDE_MODULES = new Set<WidgetId>(["snapshot", "timeline"]);
 export const STORAGE_KEY = "smarthome-specialist-views-v1";
 
@@ -39,6 +39,17 @@ export function moduleAvailable(id: WidgetId, model: ClinicianModel) {
       return trackerRows(model, id).length > 0;
     default: return kind === id && trackerRows(model, id).length > 0;
   }
+}
+
+export function visibleModules(modules: WidgetId[], model: ClinicianModel): WidgetId[] {
+  const visible = modules.filter((id) => moduleAvailable(id, model));
+  const timelineIndex = visible.indexOf("timeline");
+  const firstFollowingIndex = visible.findIndex((id) => id === "compare" || id === "review");
+  if (timelineIndex >= 0 && firstFollowingIndex >= 0 && timelineIndex > firstFollowingIndex) {
+    visible.splice(timelineIndex, 1);
+    visible.splice(firstFollowingIndex, 0, "timeline");
+  }
+  return visible;
 }
 
 export function readSpecialistViews(): SpecialistView[] {
