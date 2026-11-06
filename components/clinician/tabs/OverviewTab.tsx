@@ -11,7 +11,6 @@ import { LungWidget } from "../widgets/LungWidget";
 import { CompareWidget } from "../widgets/CompareWidget";
 import { ReviewWidget } from "../widgets/ReviewWidget";
 import { TimelineWidget } from "../widgets/TimelineWidget";
-import { PlanWidget } from "../widgets/PlanWidget";
 import { TrackerWidget } from "../widgets/TrackerWidget";
 
 export function OverviewTab({
@@ -41,7 +40,6 @@ export function OverviewTab({
           {id === "compare" ? <CompareWidget model={model} /> : null}
           {id === "review" ? <ReviewWidget model={model} onOpen={onOpenDay} /> : null}
           {id === "timeline" ? <TimelineWidget model={model} chart={chart} onOpen={onOpenDay} /> : null}
-          {id === "plan" ? <PlanWidget model={model} /> : null}
           {TRACKER_MODULES.includes(id) ? <TrackerWidget id={id} model={model} onOpen={(index) => onOpenDay(index)} /> : null}
         </div>
       ))}

@@ -47,8 +47,6 @@ export async function downloadOverviewPdf(model: ClinicianModel, visible: Widget
         if (day.slots.length) parts.push(`${day.slots.filter((slot) => slot === "taken").length}/${day.slots.length} doses marked`);
         write(parts.join(" · "), 9);
       }
-    } else if (id === "plan" && model.plan) {
-      write(`Status: ${model.plan.status}. Updated ${model.plan.updated}.${model.plan.retest ? ` Retest ${model.plan.retest}.` : ""}`, 9);
     } else if (TRACKER_MODULES.includes(id)) {
       const rows = trackerRows(model, id).slice(-8);
       if (!rows.length) write(trackerEmptyMessage(id), 9);
