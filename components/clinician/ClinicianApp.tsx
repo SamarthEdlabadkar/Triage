@@ -18,8 +18,8 @@ import {
   type SpecialistView,
 } from "./view-config";
 
-export function ClinicianApp({ model, patients }: { model: ClinicianModel; patients: PatientChoice[] }) {
-  const [page, setPage] = useState<PageId>("overview");
+export function ClinicianApp({ model, patients, initialPage = "overview" }: { model: ClinicianModel; patients: PatientChoice[]; initialPage?: PageId }) {
+  const [page, setPage] = useState<PageId>(initialPage);
   const [audience, setAudience] = useState<Audience>("clinician");
   const [specialistViews, setSpecialistViews] = useState<SpecialistView[]>([]);
   const [selectedViewId, setSelectedViewId] = useState("general");

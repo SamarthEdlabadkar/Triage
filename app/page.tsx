@@ -1,13 +1,15 @@
 import { ClinicianApp } from "@/components/clinician/ClinicianApp";
+import type { PageId } from "@/components/clinician/view-config";
 import { buildClinicianModel, type PatientChoice } from "@/lib/clinician-model";
 import { listPatientFiles, loadGroundTruth, loadPatient, loadTrackersForPatient } from "@/lib/load-data";
 
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ patient?: string; tracker?: string }>;
+  searchParams: Promise<{ patient?: string; tracker?: string; page?: string }>;
 }) {
   const params = await searchParams;
+  const initialPage: PageId = params.page === "records" || params.page === "summary" ? params.page : "overview";
   const files = await listPatientFiles();
   const patients: PatientChoice[] = [];
 
@@ -40,5 +42,5 @@ export default async function Page({
   const truth = await loadGroundTruth(patient.personaId);
   const model = buildClinicianModel(patient, file, tracker, truth);
 
-  return <ClinicianApp key={`${file}:${tracker.trackerId}`} model={model} patients={patients} />;
+  return <ClinicianApp key={`${file}:${tracker.trackerId}`} model={model} patients={patients} initialPage={initialPage} />;
 }
