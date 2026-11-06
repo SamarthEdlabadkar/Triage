@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import {
   answerQuestion,
@@ -84,21 +84,28 @@ export function ClinicianApp({
   const [preset, setPreset] = useState("pulm");
   const [layout, setLayout] = useState(() => layoutFor("pulm", model.patient.kind));
   const [customOpen, setCustomOpen] = useState(false);
-  const [day, setDay] = useState<number | null>(null);
+  const [dayDate, setDayDate] = useState<string | null>(null);
   const [showQ, setShowQ] = useState(true);
   const [askInput, setAskInput] = useState("");
   const [asking, setAsking] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [announcement, setAnnouncement] = useState("");
   const [msgs, setMsgs] = useState<Array<{ role: "user" | "ai"; text: string; dates: string[] }>>([]);
+  const viewReady = useRef(false);
   const router = useRouter();
 
   const days = model.days;
   const chart = useMemo(() => buildChart(days, showQ), [days, showQ]);
-  const selected = day == null ? null : days[day];
+  const selectedIndex = dayDate == null ? -1 : model.history.findIndex((item) => item.date === dayDate);
+  const selected = selectedIndex < 0 ? null : model.history[selectedIndex];
 
   function openDay(index: number | null) {
-    if (index == null || index < 0) return;
-    setDay(Math.max(0, Math.min(days.length - 1, index)));
+    if (index == null || index < 0 || index >= days.length) return;
+    setDayDate(days[index].date);
+  }
+
+  function openDate(date: string) {
+    if (model.history.some((item) => item.date === date)) setDayDate(date);
   }
 
   function ask(question: string) {
@@ -112,9 +119,19 @@ export function ClinicianApp({
     const result = answerQuestion(model, query);
     window.setTimeout(() => {
       setMsgs((current) => [...current, { role: "ai", text: result.text, dates: result.dates }]);
+      setAnnouncement(`${query}. ${result.text}`);
       setAsking(false);
     }, 400);
   }
+
+  useEffect(() => {
+    if (!viewReady.current) {
+      viewReady.current = true;
+      return;
+    }
+    const id = consult ? "consult-heading" : view === "overview" ? "patient-heading" : "view-heading";
+    document.getElementById(id)?.focus();
+  }, [view, consult]);
 
   const visible = layout.filter((item) => item.on);
   const trackers = patients.find((patient) => patient.file === model.patient.file)?.trackers ?? [];
@@ -126,15 +143,17 @@ export function ClinicianApp({
 
   return (
     <div className="shell">
+      <a className="skip" href="#content">Skip to content</a>
+      <div role="status" className="sr-only">{announcement}</div>
       <header style={{ display: "flex", alignItems: "center", gap: 20, padding: "16px 32px", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-accent)", display: "grid", placeItems: "center", color: "var(--color-bg)", fontWeight: 700 }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-accent)", display: "grid", placeItems: "center", color: "#fff", fontWeight: 700 }}>
             S
           </div>
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 21 }}>SMART@Home</div>
         </div>
         {!consult ? (
-          <nav style={{ display: "flex", gap: 4, padding: 4, background: "var(--color-surface)", borderRadius: 999 }}>
+          <nav style={{ display: "flex", gap: 4, padding: 4, background: "var(--color-surface)", borderRadius: 999, flexWrap: "wrap" }}>
             {(
               [
                 ["overview", "Overview"],
@@ -146,6 +165,7 @@ export function ClinicianApp({
               <button
                 key={id}
                 type="button"
+                aria-pressed={view === id}
                 onClick={() => { setView(id); setConsult(false); }}
                 style={{
                   border: 0,
@@ -154,7 +174,7 @@ export function ClinicianApp({
                   padding: "8px 16px",
                   borderRadius: 999,
                   background: view === id ? "var(--color-text)" : "transparent",
-                  color: view === id ? "var(--color-bg)" : "var(--color-text)",
+                  color: view === id ? "#fff" : "var(--color-text)",
                 }}
               >
                 {label}
@@ -180,7 +200,7 @@ export function ClinicianApp({
               ))}
             </select>
           </div>
-          <button className={`btn ${consult ? "btn-primary" : "btn-secondary"}`} type="button" onClick={() => { setConsult((value) => !value); setDay(null); }}>
+          <button className={`btn ${consult ? "btn-primary" : "btn-secondary"}`} type="button" aria-pressed={consult} onClick={() => { setConsult((value) => !value); setDayDate(null); }}>
             {consult ? "Exit consultation mode" : "Consultation mode"}
           </button>
         </div>
@@ -192,7 +212,7 @@ export function ClinicianApp({
             {model.patient.initials}
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 34 }}>{model.patient.name}</h1>
+            <h1 id="patient-heading" tabIndex={-1} style={{ margin: 0, fontSize: 34 }}>{model.patient.name}</h1>
             <div className="muted" style={{ fontSize: 14 }}>{model.visitLabel}</div>
           </div>
         </div>
@@ -221,6 +241,7 @@ export function ClinicianApp({
               <button
                 key={key}
                 type="button"
+                aria-pressed={preset === key}
                 onClick={() => { setPreset(key); setLayout(layoutFor(key, model.patient.kind)); }}
                 style={{
                   border: 0,
@@ -229,13 +250,13 @@ export function ClinicianApp({
                   padding: "6px 12px",
                   borderRadius: 999,
                   background: preset === key ? "var(--color-accent)" : "transparent",
-                  color: preset === key ? "var(--color-bg)" : "var(--color-text)",
+                  color: preset === key ? "#fff" : "var(--color-text)",
                 }}
               >
                 {item.label}
               </button>
             ))}
-            <button className="btn btn-secondary" type="button" onClick={() => setCustomOpen(true)}>Customise</button>
+            <button className="btn btn-secondary" type="button" onClick={() => setCustomOpen(true)}>Customize</button>
           </div>
         ) : null}
       </section>
@@ -247,25 +268,23 @@ export function ClinicianApp({
         </p>
       ) : null}
 
-      <main style={{ padding: "0 32px 56px" }}>
+      <main id="content" tabIndex={-1} style={{ padding: "0 32px 56px" }}>
         {!consult && view === "overview" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <form
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 8px 8px 20px", background: "var(--color-neutral-100)", borderRadius: 999, boxShadow: "var(--shadow-sm)" }}
-              onSubmit={(event) => { event.preventDefault(); ask(askInput); }}
-            >
+            <form className="ask-form" onSubmit={(event) => { event.preventDefault(); ask(askInput); }}>
+              <label className="muted" htmlFor="overview-ask" style={{ fontSize: 12 }}>Ask a question</label>
               <input
+                id="overview-ask"
                 value={askInput}
                 onChange={(event) => setAskInput(event.target.value)}
-                placeholder={`Ask about ${model.patient.name.split(" ")[0]}’s data`}
-                style={{ flex: 1, border: 0, background: "transparent", font: "15px var(--font-body)", color: "var(--color-text)", outline: "none", minWidth: 120 }}
+                placeholder="Headaches in the last 14 days"
               />
               <button className="btn btn-primary" type="submit">Ask</button>
             </form>
             <div className="board">
               {visible.map((item) => (
                 <div key={item.id} className={item.wide ? "span-12" : "span-6"}>
-                  {item.id === "snapshot" ? <Snapshot model={model} onOpen={openDay} onTimeline={() => setView("timeline")} /> : null}
+                  {item.id === "snapshot" ? <Snapshot model={model} onOpen={openDay} onOpenDate={openDate} onTimeline={() => setView("timeline")} /> : null}
                   {item.id === "changed" ? <Changed model={model} onOpen={openDay} /> : null}
                   {item.id === "lung" ? <Lung model={model} chart={chart} showQ={showQ} onToggle={() => setShowQ((value) => !value)} onOpen={openDay} /> : null}
                   {item.id === "compare" ? <Compare model={model} /> : null}
@@ -297,31 +316,35 @@ export function ClinicianApp({
             askInput={askInput}
             setAskInput={setAskInput}
             onAsk={ask}
-            onOpenDate={(date) => openDay(days.findIndex((item) => item.date === date))}
+            onOpenDate={openDate}
           />
         ) : null}
 
         {!consult && view === "summary" ? (
           <Summary
             model={model}
-            copied={copied}
+            copyState={copyState}
             onCopy={() => {
-              navigator.clipboard?.writeText(model.summaryText).catch(() => undefined);
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1800);
+              const write = navigator.clipboard?.writeText(model.summaryText);
+              if (!write) {
+                setCopyState("failed");
+              } else {
+                write.then(() => setCopyState("copied")).catch(() => setCopyState("failed"));
+              }
+              window.setTimeout(() => setCopyState("idle"), 4000);
             }}
           />
         ) : null}
 
-        {consult ? <Consult model={model} chart={chart} /> : null}
+        {consult ? <Consult model={model} chart={chart} onOpen={openDay} /> : null}
       </main>
 
       {selected ? (
         <Drawer
           day={selected}
-          onClose={() => setDay(null)}
-          onPrev={() => openDay(day! - 1)}
-          onNext={() => openDay(day! + 1)}
+          onClose={() => setDayDate(null)}
+          onPrev={() => selectedIndex > 0 && setDayDate(model.history[selectedIndex - 1].date)}
+          onNext={() => selectedIndex >= 0 && selectedIndex < model.history.length - 1 && setDayDate(model.history[selectedIndex + 1].date)}
         />
       ) : null}
       {customOpen ? (
@@ -343,16 +366,6 @@ function dayMarked(day: DayView) {
   return day.symptoms.length > 0 || day.headache === true;
 }
 
-function dayMarkStyle(day: DayView): CSSProperties {
-  const marked = dayMarked(day);
-  return {
-    background: !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)",
-    border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)",
-    color: !day.logged ? "var(--color-neutral-800)" : marked ? "var(--color-accent-900)" : "var(--color-bg)",
-    opacity: day.active ? 1 : 0.35,
-  };
-}
-
 function dayMarkLabel(day: DayView) {
   if (!day.active) return "before this tracker was assigned";
   if (!day.logged) return "no entry";
@@ -360,7 +373,30 @@ function dayMarkLabel(day: DayView) {
   return "logged without symptoms or headache";
 }
 
-function Snapshot({ model, onOpen, onTimeline }: { model: ClinicianModel; onOpen: (index: number | null) => void; onTimeline: () => void }) {
+function dotStyle(day: DayView): CSSProperties {
+  const marked = dayMarked(day);
+  return {
+    width: 12,
+    height: 12,
+    borderRadius: "50%",
+    boxSizing: "border-box",
+    background: !day.logged ? "transparent" : marked ? "var(--color-accent-400)" : "var(--color-accent-2-700)",
+    border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)",
+    opacity: day.active ? 1 : 0.35,
+  };
+}
+
+function monthKey(year: number, month: number) {
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function shiftMonth(key: string, amount: number) {
+  const [year, month] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1 + amount, 1));
+  return monthKey(date.getUTCFullYear(), date.getUTCMonth() + 1);
+}
+
+function Snapshot({ model, onOpen, onOpenDate, onTimeline }: { model: ClinicianModel; onOpen: (index: number | null) => void; onOpenDate: (date: string) => void; onTimeline: () => void }) {
   return (
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
@@ -390,27 +426,44 @@ function Snapshot({ model, onOpen, onTimeline }: { model: ClinicianModel; onOpen
             <div style={{ fontSize: 12, color: "var(--color-accent-2-800)", fontWeight: 700, marginTop: 4 }}>{card.note}</div>
           </button>
         ))}
-        <MonthCalendar days={model.days} onOpen={onOpen} />
+        <MonthCalendar days={model.history} onOpenDate={onOpenDate} />
       </div>
-      <DayStrip days={model.days} onOpen={onOpen} />
     </article>
   );
 }
 
-function MonthCalendar({ days, onOpen }: { days: DayView[]; onOpen: (index: number) => void }) {
-  const start = Math.max(0, WEEKDAYS.indexOf(days[0]?.dow ?? "Sun"));
-  const cells: Array<DayView | null> = [...Array.from({ length: start }, () => null), ...days];
-  while (cells.length % 7) cells.push(null);
+function MonthCalendar({ days, onOpenDate }: { days: DayView[]; onOpenDate: (date: string) => void }) {
+  const earliest = days[0]?.date.slice(0, 7) ?? "2026-11";
+  const latest = days[days.length - 1]?.date.slice(0, 7) ?? earliest;
+  const [cursor, setCursor] = useState(latest);
+  const byDate = useMemo(() => new Map(days.map((day) => [day.date, day])), [days]);
+  const [year, month] = cursor.split("-").map(Number);
+  const label = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, 1)));
+  const firstDow = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const count = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const cells: Array<DayView | null> = [
+    ...Array.from({ length: firstDow }, () => null),
+    ...Array.from({ length: count }, (_, index) => byDate.get(`${cursor}-${String(index + 1).padStart(2, "0")}`) ?? null),
+  ];
+
+  function move(amount: number) {
+    const next = shiftMonth(cursor, amount);
+    setCursor(next < earliest ? earliest : next > latest ? latest : next);
+  }
 
   return (
     <div style={{ background: "var(--color-neutral-100)", borderRadius: 22, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
-      <div>
-        <div className="kicker">Calendar</div>
-        <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{days[0]?.short} – {days[days.length - 1]?.short}</div>
+      <div className="kicker">Calendar</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <CalendarStep label="Previous year" glyph="«" disabled={cursor <= earliest} onClick={() => move(-12)} />
+        <CalendarStep label="Previous month" glyph="‹" disabled={cursor <= earliest} onClick={() => move(-1)} />
+        <div style={{ flex: 1, textAlign: "center", fontWeight: 700, fontSize: 13 }}>{label}</div>
+        <CalendarStep label="Next month" glyph="›" disabled={cursor >= latest} onClick={() => move(1)} />
+        <CalendarStep label="Next year" glyph="»" disabled={cursor >= latest} onClick={() => move(12)} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 3, minWidth: 0 }}>
-        {WEEKDAYS.map((label) => (
-          <div key={label} className="faint" style={{ textAlign: "center", fontSize: 10, fontWeight: 700 }}>{label.slice(0, 1)}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 2, minWidth: 0 }}>
+        {WEEKDAYS.map((name) => (
+          <div key={name} className="faint" style={{ textAlign: "center", fontSize: 10, fontWeight: 700 }}>{name.slice(0, 1)}</div>
         ))}
         {cells.map((day, index) => day ? (
           <button
@@ -418,61 +471,40 @@ function MonthCalendar({ days, onOpen }: { days: DayView[]; onOpen: (index: numb
             type="button"
             title={`${day.short} · ${dayMarkLabel(day)}`}
             aria-label={`${day.long}. ${dayMarkLabel(day)}`}
-            onClick={() => onOpen(days.findIndex((item) => item.date === day.date))}
-            style={{
-              aspectRatio: "1",
-              width: "100%",
-              minWidth: 0,
-              borderRadius: 8,
-              cursor: "pointer",
-              font: "600 11px var(--font-body)",
-              padding: 0,
-              boxSizing: "border-box",
-              ...dayMarkStyle(day),
-              border: day.logged ? "1.5px solid transparent" : "1.5px dashed var(--color-neutral-500)",
-            }}
+            onClick={() => onOpenDate(day.date)}
+            style={{ display: "grid", placeItems: "center", aspectRatio: "1", minWidth: 0, border: 0, background: "transparent", padding: 0, cursor: "pointer" }}
           >
-            {day.num}
+            <span style={dotStyle(day)} />
           </button>
         ) : (
-          <div key={`pad-${index}`} aria-hidden="true" />
+          <div key={`pad-${cursor}-${index}`} aria-hidden="true" />
         ))}
       </div>
     </div>
   );
 }
 
-function DayStrip({ days, onOpen }: { days: DayView[]; onOpen: (index: number) => void }) {
+function CalendarStep({ label, glyph, disabled, onClick }: { label: string; glyph: string; disabled: boolean; onClick: () => void }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }} className="muted">
-        <span style={{ fontWeight: 700, color: "var(--color-text)" }}>Reported days</span>
-        <span>Filled = symptoms or headache · pale = logged without those · dashed = no entry</span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, gap: 3 }}>
-        {days.map((day, index) => (
-          <button
-            key={day.date}
-            type="button"
-            title={`${day.short} · ${dayMarkLabel(day)}`}
-            aria-label={`${day.long}. ${dayMarkLabel(day)}`}
-            onClick={() => onOpen(index)}
-            style={{
-              height: 22,
-              borderRadius: 999,
-              cursor: "pointer",
-              padding: 0,
-              ...dayMarkStyle(day),
-            }}
-          />
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }} className="faint">
-        <span>{days[0].short}</span>
-        <span>{days[14].short}</span>
-        <span>{days[days.length - 1].short}</span>
-      </div>
-    </div>
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        width: 28,
+        height: 28,
+        border: 0,
+        borderRadius: 999,
+        background: "transparent",
+        color: "var(--color-text)",
+        font: "600 16px var(--font-body)",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.35 : 1,
+      }}
+    >
+      {glyph}
+    </button>
   );
 }
 
@@ -526,13 +558,14 @@ function ChartFrame({ chart, points, height, onOpen }: { chart: Chart; points: C
         ))}
         {chart.predTop ? <div style={{ position: "absolute", left: 0, right: 0, top: chart.predTop, borderTop: "2px dashed var(--color-accent-2-600)" }} /> : null}
         <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}>
-          <path d={chart.path} fill="none" stroke="var(--color-accent-2-600)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+          <path d={chart.path} fill="none" stroke="var(--color-blue-600)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
         </svg>
         {points.map((point) => (
           <button
             key={point.index}
             type="button"
             title={point.title}
+            aria-label={point.title}
             onClick={() => onOpen(point.index)}
             style={{
               position: "absolute",
@@ -542,8 +575,8 @@ function ChartFrame({ chart, points, height, onOpen }: { chart: Chart; points: C
               height: 14,
               margin: "-7px 0 0 -7px",
               borderRadius: "50%",
-              background: point.ok ? "var(--color-accent-2-700)" : "var(--color-neutral-100)",
-              border: point.ok ? "2px solid var(--color-surface)" : "2.5px solid var(--color-accent-600)",
+              background: point.ok ? "var(--color-blue-600)" : "#fff",
+              border: point.ok ? "2px solid var(--color-surface)" : "2.5px solid var(--color-accent-400)",
               cursor: "pointer",
             }}
           />
@@ -570,8 +603,8 @@ function Compare({ model }: { model: ClinicianModel }) {
             <div className="faint" style={{ fontSize: 11 }}>{row.note}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ height: 12, borderRadius: 999, background: "var(--color-neutral-400)", width: row.beforeWidth }} /><span style={{ fontSize: 12 }}>{row.before}</span></div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ height: 12, borderRadius: 999, background: "var(--color-accent-2-600)", width: row.afterWidth }} /><span style={{ fontSize: 12, fontWeight: 700 }}>{row.after}</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ height: 12, borderRadius: 999, background: "var(--color-neutral-700)", width: row.beforeWidth }} /><span style={{ fontSize: 12 }}>{row.before}</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ height: 12, borderRadius: 999, background: "var(--color-blue-600)", width: row.afterWidth }} /><span style={{ fontSize: 12, fontWeight: 700 }}>{row.after}</span></div>
           </div>
         </div>
       ))}
@@ -607,7 +640,7 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
         <div style={{ flex: 1 }}>
-          <h3 style={{ margin: 0, fontSize: 21 }}>Synchronized timeline</h3>
+          <h3 id={onFull ? undefined : "view-heading"} tabIndex={onFull ? undefined : -1} style={{ margin: 0, fontSize: 21 }}>Synchronized timeline</h3>
           <div className="muted" style={{ fontSize: 13 }}>Aligned by date · select a column for the submissions</div>
         </div>
         {onFull ? <button className="btn btn-ghost" type="button" onClick={onFull}>Full timeline & records →</button> : null}
@@ -617,20 +650,20 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
           <Row label="Reported">
             {days.map((day, index) => {
               const marked = day.symptoms.length > 0 || day.headache === true;
-              return <button key={day.date} type="button" onClick={() => onOpen(index)} style={{ height: 16, borderRadius: 999, background: !day.active || !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)", border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)", opacity: day.active ? 1 : 0.35 }} />;
+              return <button key={day.date} type="button" aria-label={`${day.long}, Reported: ${dayMarkLabel(day)}`} onClick={() => onOpen(index)} style={{ height: 16, borderRadius: 999, padding: 0, background: !day.active || !day.logged ? "transparent" : marked ? "var(--color-accent-400)" : "var(--color-accent-2-700)", border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)", opacity: day.active ? 1 : 0.35 }} />;
             })}
           </Row>
           <Row label="Symptoms">
             {days.map((day, index) => (
-              <button key={day.date} type="button" title={day.symptoms.join(", ")} onClick={() => onOpen(index)} style={{ display: "grid", placeItems: "center", height: 28 }}>
-                <span style={{ width: day.logged ? 6 + day.symptoms.length * 4 : 8, height: day.logged ? 6 + day.symptoms.length * 4 : 8, borderRadius: "50%", background: !day.logged ? "transparent" : day.symptoms.length ? "var(--color-accent-500)" : "var(--color-neutral-400)", border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)" }} />
+              <button key={day.date} type="button" aria-label={`${day.long}, Symptoms: ${!day.logged ? "no entry" : day.symptoms.length ? day.symptoms.join(", ") : "none reported"}`} onClick={() => onOpen(index)} style={{ display: "grid", placeItems: "center", height: 28 }}>
+                <span style={{ width: day.logged ? 6 + day.symptoms.length * 4 : 8, height: day.logged ? 6 + day.symptoms.length * 4 : 8, borderRadius: "50%", background: !day.logged ? "transparent" : day.symptoms.length ? "var(--color-accent-400)" : "var(--color-neutral-700)", border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)" }} />
               </button>
             ))}
           </Row>
           {model.patient.kind !== "ibd" ? (
             <Row label={model.patient.kind === "asthma" ? "Rescue units" : "As-needed units"}>
               {days.map((day, index) => (
-                <button key={day.date} type="button" onClick={() => onOpen(index)} style={{ height: "100%", display: "flex", alignItems: "end" }}>
+                <button key={day.date} type="button" aria-label={`${day.long}, ${model.patient.kind === "asthma" ? "Rescue units" : "As-needed units"}: ${day.logged ? `${day.rescue ?? 0} units` : "no entry"}`} onClick={() => onOpen(index)} style={{ height: "100%", display: "flex", alignItems: "end" }}>
                   <span style={{ display: "block", width: "56%", margin: "0 auto", height: Math.min(24, (day.rescue ?? 0) * 6), background: "var(--color-accent-700)", borderRadius: 4 }} />
                 </button>
               ))}
@@ -638,7 +671,7 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
           ) : null}
           <Row label={model.dailyMedName ? "Daily med" : "Daily med"}>
             {days.map((day, index) => (
-              <button key={day.date} type="button" onClick={() => onOpen(index)} style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "center" }}>
+              <button key={day.date} type="button" aria-label={`${day.long}, Daily medication: ${!day.active ? "before this tracker was assigned" : day.slots.length ? day.slots.map((slot) => (slot === "taken" ? "marked" : "not marked")).join(", ") : "not marked"}`} onClick={() => onOpen(index)} style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "center" }}>
                 {(day.slots.length ? day.slots : ["open" as const]).map((slot, slotIndex) => {
                   const style = day.active ? slotStyle(slot) : { background: "transparent", border: "0" };
                   return <span key={slotIndex} style={{ width: 12, height: 12, borderRadius: 4, boxSizing: "border-box", ...style }} />;
@@ -651,10 +684,10 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
               <div style={{ fontSize: 12, fontWeight: 700 }}>FEV1</div>
               <div style={{ position: "relative", height: compact ? 56 : 90 }}>
                 <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-                  <path d={chart.path} fill="none" stroke="var(--color-accent-2-600)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                  <path d={chart.path} fill="none" stroke="var(--color-blue-600)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
                 </svg>
                 {chart.points.map((point) => (
-                  <button key={point.index} type="button" title={point.title} onClick={() => onOpen(point.index)} style={{ position: "absolute", left: point.left, top: point.top, width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: point.ok ? "var(--color-accent-2-700)" : "transparent", border: point.ok ? "0" : "2px solid var(--color-accent-600)" }} />
+                  <button key={point.index} type="button" title={point.title} aria-label={point.title} onClick={() => onOpen(point.index)} style={{ position: "absolute", left: point.left, top: point.top, width: 24, height: 24, margin: "-12px 0 0 -12px", borderRadius: "50%", background: "transparent", border: 0, cursor: "pointer" }}><span style={{ display: "block", width: 9, height: 9, margin: "7.5px auto", borderRadius: "50%", background: point.ok ? "var(--color-blue-600)" : "transparent", border: point.ok ? "0" : "2px solid var(--color-accent-400)", boxSizing: "border-box" }} /></button>
                 ))}
               </div>
             </div>
@@ -687,16 +720,18 @@ function Meds({ model, onOpen }: { model: ClinicianModel; onOpen: (index: number
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
           <div key={label} className="faint" style={{ fontSize: 11, textAlign: "center", fontWeight: 700 }}>{label}</div>
         ))}
-        {cells.map((day, index) => (
-          <button key={day?.date ?? `blank-${index}`} type="button" onClick={() => day && onOpen(model.days.indexOf(day))} style={{ border: 0, background: "transparent", borderRadius: 14, padding: 5, opacity: day?.active === false ? 0.35 : 1, cursor: day ? "pointer" : "default" }}>
-            <div className="muted" style={{ fontSize: 11 }}>{day ? day.num : ""}</div>
+        {cells.map((day, index) => day ? (
+          <button key={day.date} type="button" aria-label={`${day.long}. ${day.slots.length ? day.slots.map((slot) => (slot === "taken" ? "Marked" : "Not marked")).join(", ") : "No daily medication"}`} onClick={() => onOpen(model.days.indexOf(day))} style={{ border: 0, background: "transparent", borderRadius: 14, padding: 5, opacity: day.active === false ? 0.35 : 1, cursor: "pointer" }}>
+            <div className="muted" style={{ fontSize: 12 }}>{day.num}</div>
             <div style={{ display: "flex", gap: 2 }}>
-              {(day?.slots.length ? day.slots : day ? ["open" as const] : []).map((slot, slotIndex) => {
+              {(day.slots.length ? day.slots : ["open" as const]).map((slot, slotIndex) => {
                 const style = slotStyle(slot);
-                return <span key={slotIndex} style={{ flex: 1, height: 16, borderRadius: 999, boxSizing: "border-box", ...style }} />;
+                return <span key={slotIndex} aria-hidden="true" style={{ flex: 1, height: 16, borderRadius: 999, boxSizing: "border-box", ...style }} />;
               })}
             </div>
           </button>
+        ) : (
+          <div key={`blank-${index}`} aria-hidden="true" />
         ))}
       </div>
       <div className="muted" style={{ fontSize: 12 }}>
@@ -757,8 +792,8 @@ function Records({ model, onOpen }: { model: ClinicianModel; onOpen: (index: num
         </thead>
         <tbody>
           {[...model.days].reverse().map((day) => (
-            <tr key={day.date} onClick={() => onOpen(model.days.indexOf(day))} style={{ cursor: "pointer" }}>
-              <td style={{ fontWeight: 700 }}>{day.dow} {day.short}</td>
+            <tr key={day.date}>
+              <td><button type="button" className="record-open" onClick={() => onOpen(model.days.indexOf(day))} aria-label={`Open ${day.dow} ${day.short}`}>{day.dow} {day.short}</button></td>
               <td>{day.feeling ?? "—"}</td>
               <td style={{ fontSize: 13 }}>{day.logged ? day.symptoms.join(", ") || "None" : "—"}</td>
               <td>{model.patient.kind === "migraine" ? (day.headache == null ? "—" : day.headache ? "Yes" : "No") : (day.rescue ?? "—")}</td>
@@ -788,7 +823,7 @@ function Ask({
     <div className="split" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(240px, 320px)", gap: 20, alignItems: "start" }}>
       <article className="card" style={{ display: "flex", flexDirection: "column", gap: 16, minHeight: 520 }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: 21 }}>Ask the data</h3>
+          <h3 id="view-heading" tabIndex={-1} style={{ margin: 0, fontSize: 21 }}>Ask the data</h3>
           <div className="muted" style={{ fontSize: 13 }}>Answers use only this patient’s records in the 28-day window.</div>
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -797,12 +832,12 @@ function Ask({
           ) : null}
           {msgs.map((message, index) => (
             <div key={index} style={{ display: "flex", justifyContent: message.role === "user" ? "flex-end" : "flex-start" }}>
-              <div style={{ maxWidth: "78%", padding: "12px 16px", borderRadius: 22, background: message.role === "user" ? "var(--color-text)" : "var(--color-neutral-100)", color: message.role === "user" ? "var(--color-bg)" : "var(--color-text)", fontSize: 14, lineHeight: 1.55 }}>
+              <div style={{ maxWidth: "78%", padding: "12px 16px", borderRadius: 22, background: message.role === "user" ? "var(--color-text)" : "var(--color-neutral-100)", color: message.role === "user" ? "#fff" : "var(--color-text)", fontSize: 14, lineHeight: 1.55 }}>
                 <div style={{ whiteSpace: "pre-wrap" }}>{message.text}</div>
                 {message.dates.length ? (
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                     {message.dates.map((date) => (
-                      <button key={date} type="button" className="tag tag-outline" onClick={() => onOpenDate(date)}>{date.slice(5)}</button>
+                      <button key={date} type="button" className="tag tag-outline" aria-label={`Open ${date}`} onClick={() => onOpenDate(date)}>{date.slice(5)}</button>
                     ))}
                   </div>
                 ) : null}
@@ -810,8 +845,9 @@ function Ask({
             </div>
           ))}
         </div>
-        <form style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 6px 6px 18px", background: "var(--color-neutral-100)", borderRadius: 999 }} onSubmit={(event) => { event.preventDefault(); onAsk(askInput); }}>
-          <input value={askInput} onChange={(event) => setAskInput(event.target.value)} placeholder="Ask about symptoms, medication, lung function, gaps…" style={{ flex: 1, border: 0, background: "transparent", font: "15px var(--font-body)", color: "var(--color-text)", outline: "none" }} />
+        <form className="ask-form" onSubmit={(event) => { event.preventDefault(); onAsk(askInput); }}>
+          <label className="muted" htmlFor="ask-question" style={{ fontSize: 12 }}>Ask a question</label>
+          <input id="ask-question" value={askInput} onChange={(event) => setAskInput(event.target.value)} placeholder="Rescue doses last week" />
           <button className="btn btn-primary" type="submit">Ask</button>
         </form>
       </article>
@@ -830,17 +866,17 @@ function Ask({
   );
 }
 
-function Summary({ model, copied, onCopy }: { model: ClinicianModel; copied: boolean; onCopy: () => void }) {
+function Summary({ model, copyState, onCopy }: { model: ClinicianModel; copyState: "idle" | "copied" | "failed"; onCopy: () => void }) {
   return (
     <div className="split" style={{ display: "grid", gridTemplateColumns: "minmax(0, 760px) minmax(220px, 300px)", gap: 20, alignItems: "start" }}>
       <article style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-lg)", padding: "32px 36px", boxShadow: "var(--shadow-md)", display: "flex", flexDirection: "column", gap: 18 }}>
         <div>
           <div className="kicker" style={{ color: "var(--color-accent-700)" }}>Visit summary · factual findings</div>
-          <h2 style={{ margin: "4px 0 0", fontSize: 28 }}>{model.patient.name}, {model.patient.age} y — {model.patient.trackerName}</h2>
+          <h2 id="view-heading" tabIndex={-1} style={{ margin: "4px 0 0", fontSize: 28 }}>{model.patient.name}, {model.patient.age} y — {model.patient.trackerName}</h2>
           <div className="muted" style={{ fontSize: 13 }}>{model.rangeLabel}</div>
         </div>
         {model.summary.map((section) => (
-          <div key={section.title} style={{ display: "grid", gridTemplateColumns: "150px minmax(0, 1fr)", gap: 16 }}>
+          <div key={section.title} className="summary-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 150px) minmax(0, 1fr)", gap: 16 }}>
             <div style={{ fontWeight: 700, fontSize: 13 }}>{section.title}</div>
             <div style={{ fontSize: 14, lineHeight: 1.6 }}>{section.text}</div>
           </div>
@@ -848,7 +884,7 @@ function Summary({ model, copied, onCopy }: { model: ClinicianModel; copied: boo
       </article>
       <aside className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Export</div>
-        <button className="btn btn-primary" type="button" onClick={onCopy}>{copied ? "Copied" : "Copy summary"}</button>
+        <button className="btn btn-primary" type="button" onClick={onCopy} style={{ whiteSpace: "normal" }}>{copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed. Download .txt instead." : "Copy summary"}</button>
         <button className="btn btn-secondary" type="button" onClick={() => download(`${model.patient.file.replace(".json", "")}-summary.txt`, model.summaryText, "text/plain")}>Download .txt</button>
         <button className="btn btn-secondary" type="button" onClick={() => download(`${model.patient.file.replace(".json", "")}-daily.csv`, model.csv, "text/csv")}>Daily data .csv</button>
         <div className="muted" style={{ fontSize: 12 }}>Every figure is from the synthetic home record and carries the limits of self-report.</div>
@@ -857,12 +893,12 @@ function Summary({ model, copied, onCopy }: { model: ClinicianModel; copied: boo
   );
 }
 
-function Consult({ model, chart }: { model: ClinicianModel; chart: Chart }) {
+function Consult({ model, chart, onOpen }: { model: ClinicianModel; chart: Chart; onOpen: (index: number) => void }) {
   const good = model.days.filter((day) => day.logged && day.symptoms.length === 0 && day.headache !== true).length;
   const hard = model.days.filter((day) => day.logged && (day.symptoms.length > 0 || day.headache === true)).length;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <h2 style={{ margin: 0, fontSize: 48 }}>{model.patient.name.split(" ")[0]}’s last 4 weeks</h2>
+      <h2 id="consult-heading" tabIndex={-1} style={{ margin: 0, fontSize: 48 }}>{model.patient.name.split(" ")[0]}’s last 4 weeks</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
         <article className="card" style={{ borderRadius: 36, padding: 32 }}>
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>How the days were reported</div>
@@ -878,28 +914,51 @@ function Consult({ model, chart }: { model: ClinicianModel; chart: Chart }) {
         <article className="card" style={{ borderRadius: 36, padding: 32 }}>
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>Breathing test</div>
           <div style={{ fontSize: 18, margin: "8px 0 16px" }}>Air blown out in one second, using blows that passed the device check. Higher on the chart is a larger volume.</div>
-          <ChartFrame chart={chart} points={chart.points.filter((point) => point.ok)} height={240} onOpen={() => undefined} />
+          <ChartFrame chart={chart} points={chart.points.filter((point) => point.ok)} height={240} onOpen={onOpen} />
         </article>
       ) : null}
     </div>
   );
 }
 
+function useModalDialog() {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (!dialog.open) dialog.showModal();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }, []);
+  return ref;
+}
+
 function Drawer({ day, onClose, onPrev, onNext }: { day: DayView; onClose: () => void; onPrev: () => void; onNext: () => void }) {
+  const ref = useModalDialog();
+  function requestClose() {
+    ref.current?.close();
+  }
   return (
-    <>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "color-mix(in srgb, var(--color-neutral-900) 35%, transparent)", zIndex: 20 }} />
-      <aside style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(480px, 100%)", background: "var(--color-bg)", boxShadow: "var(--shadow-lg)", zIndex: 21, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+    <dialog
+      ref={ref}
+      className="panel-dialog wide"
+      aria-labelledby="day-heading"
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) requestClose();
+      }}
+    >
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-secondary btn-icon" type="button" onClick={onPrev} aria-label="Previous day">‹</button>
           <button className="btn btn-secondary btn-icon" type="button" onClick={onNext} aria-label="Next day">›</button>
-          <button className="btn btn-ghost" type="button" style={{ marginLeft: "auto" }} onClick={onClose}>Close</button>
+          <button className="btn btn-ghost" type="button" style={{ marginLeft: "auto" }} onClick={requestClose}>Close</button>
         </div>
         <div>
           <div className="muted" style={{ fontSize: 12 }}>Day detail</div>
-          <h2 style={{ margin: 0, fontSize: 28 }}>{day.long}</h2>
+          <h2 id="day-heading" style={{ margin: 0, fontSize: 28 }}>{day.long}</h2>
           {!day.active ? <div className="tag tag-neutral" style={{ marginTop: 8 }}>Before this tracker was assigned</div> : null}
-          {day.conflict ? <div style={{ marginTop: 10, background: "var(--color-accent-100)", color: "var(--color-accent-900)", borderRadius: 18, padding: "12px 16px", fontSize: 13 }}>{day.conflict}</div> : null}
+          {day.conflict ? <div style={{ marginTop: 10, background: "var(--color-accent-100)", color: "var(--color-accent-800)", borderRadius: 18, padding: "12px 16px", fontSize: 13 }}>{day.conflict}</div> : null}
         </div>
         <section>
           <h4 style={{ margin: "0 0 8px", fontSize: 17 }}>Tracker submissions</h4>
@@ -938,8 +997,7 @@ function Drawer({ day, onClose, onPrev, onNext }: { day: DayView; onClose: () =>
             <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Bold is the best blow, the one used on the chart. Peak flow is converted from liters per second.</div>
           </section>
         ) : null}
-      </aside>
-    </>
+    </dialog>
   );
 }
 
@@ -952,16 +1010,26 @@ function Customize({
   onPreset: (key: string) => void;
   onEdit: (next: Array<{ id: WidgetId; on: boolean; wide: boolean }>) => void;
 }) {
+  const ref = useModalDialog();
+  function requestClose() {
+    ref.current?.close();
+  }
   return (
-    <>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "color-mix(in srgb, var(--color-neutral-900) 35%, transparent)", zIndex: 20 }} />
-      <aside style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(440px, 100%)", background: "var(--color-bg)", boxShadow: "var(--shadow-lg)", zIndex: 21, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+    <dialog
+      ref={ref}
+      className="panel-dialog narrow"
+      aria-labelledby="customize-heading"
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) requestClose();
+      }}
+    >
         <div style={{ display: "flex", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: 26, flex: 1 }}>Customise dashboard</h2>
-          <button className="btn btn-ghost" type="button" onClick={onClose}>Close</button>
+          <h2 id="customize-heading" style={{ margin: 0, fontSize: 26, flex: 1 }}>Customize dashboard</h2>
+          <button className="btn btn-ghost" type="button" onClick={requestClose}>Close</button>
         </div>
         {Object.entries(PRESETS).map(([key, item]) => (
-          <button key={key} type="button" onClick={() => onPreset(key)} style={{ textAlign: "left", borderRadius: 20, padding: "12px 16px", background: preset === key ? "var(--color-accent-100)" : "var(--color-surface)", border: preset === key ? "2px solid var(--color-accent)" : "2px solid transparent", fontFamily: "var(--font-body)", color: "var(--color-text)", cursor: "pointer" }}>
+          <button key={key} type="button" aria-pressed={preset === key} onClick={() => onPreset(key)} style={{ textAlign: "left", borderRadius: 20, padding: "12px 16px", background: preset === key ? "var(--color-accent-100)" : "var(--color-surface)", border: preset === key ? "2px solid var(--color-accent)" : "2px solid transparent", fontFamily: "var(--font-body)", color: "var(--color-text)", cursor: "pointer" }}>
             <div style={{ fontWeight: 700 }}>{item.label}</div>
             <div className="muted" style={{ fontSize: 12 }}>{item.desc}</div>
           </button>
@@ -972,12 +1040,11 @@ function Customize({
               <div style={{ fontWeight: 700, fontSize: 14 }}>{WIDGETS[item.id].name}</div>
               <div className="muted" style={{ fontSize: 12 }}>{WIDGETS[item.id].desc}</div>
             </div>
-            <button type="button" className="tag tag-neutral" style={{ border: 0, cursor: "pointer" }} onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, wide: !widget.wide } : widget))}>{item.wide ? "Wide" : "Half"}</button>
-            <button type="button" className="btn btn-secondary" onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, on: !widget.on } : widget))}>{item.on ? "Hide" : "Show"}</button>
+            <button type="button" className="tag tag-neutral" style={{ border: 0, cursor: "pointer" }} onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, wide: !widget.wide } : widget))}>{item.wide ? `Make ${WIDGETS[item.id].name} half` : `Make ${WIDGETS[item.id].name} wide`}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, on: !widget.on } : widget))}>{item.on ? `Hide ${WIDGETS[item.id].name}` : `Show ${WIDGETS[item.id].name}`}</button>
           </div>
         ))}
-      </aside>
-    </>
+    </dialog>
   );
 }
 

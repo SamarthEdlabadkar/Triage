@@ -143,6 +143,7 @@ export type ClinicianModel = {
     retestOverdue: boolean;
   } | null;
   days: DayView[];
+  history: DayView[];
   cards: SnapCard[];
   changed: ChangeRow[];
   compare: CompareRow[];
@@ -325,8 +326,8 @@ export function buildClinicianModel(
 ): ClinicianModel {
   const kind = kindOf(tracker);
   const start = addDays(END, -(WINDOW - 1));
-  const dates = Array.from({ length: WINDOW }, (_, index) => addDays(start, index));
   const logs = new Map(patient.dailyLogs.map((log) => [log.day, log]));
+  const earliestLog = [...logs.keys()].sort()[0];
   const assigned = patient.assignedTrackers.find((item) => item.trackerId === tracker.trackerId);
   const assignedOn = assigned?.assignedDate ?? patient.enrolledDate;
 
@@ -362,7 +363,12 @@ export function buildClinicianModel(
   const painQ = question(tracker, "pain") ?? question(tracker, "severity");
   const bloodQ = question(tracker, "blood");
 
-  const days: DayView[] = dates.map((date) => {
+  const historyStart = [earliestLog, assignedOn, patient.enrolledDate].filter(Boolean).sort()[0] ?? start;
+  const first = historyStart < start ? historyStart : start;
+  const allDates: string[] = [];
+  for (let date = first; date <= END; date = addDays(date, 1)) allDates.push(date);
+
+  const history: DayView[] = allDates.map((date) => {
     const log: DailyLog | undefined = logs.get(date);
     const active = date >= assignedOn && date >= patient.enrolledDate;
     const submissions = (log?.trackerResponses ?? []).filter((item) => item.trackerId === tracker.trackerId);
@@ -530,6 +536,7 @@ export function buildClinicianModel(
       blows,
     };
   });
+  const days = history.filter((day) => day.date >= start);
 
   const activeDays = days.filter((day) => day.active);
   const loggedDays = activeDays.filter((day) => day.logged);
@@ -1004,6 +1011,7 @@ export function buildClinicianModel(
       : null,
     plan,
     days,
+    history,
     cards,
     changed,
     compare,
