@@ -40,5 +40,5 @@ export default async function Page({
   const truth = await loadGroundTruth(patient.personaId);
   const model = buildClinicianModel(patient, file, tracker, truth);
 
-  return <ClinicianApp model={model} patients={patients} />;
+  return <ClinicianApp key={`${file}:${tracker.trackerId}`} model={model} patients={patients} />;
 }
