@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import {
   answerQuestion,
@@ -96,6 +96,11 @@ export function ClinicianApp({
   const chart = useMemo(() => buildChart(days, showQ), [days, showQ]);
   const selected = day == null ? null : days[day];
 
+  // Views share one page, so without this a phone stays scrolled partway down the new view.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view, consult]);
+
   function openDay(index: number | null) {
     if (index == null || index < 0) return;
     setDay(Math.max(0, Math.min(days.length - 1, index)));
@@ -126,7 +131,7 @@ export function ClinicianApp({
 
   return (
     <div className="shell">
-      <header style={{ display: "flex", alignItems: "center", gap: 20, padding: "16px 32px", flexWrap: "wrap" }}>
+      <header className="app-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-accent)", display: "grid", placeItems: "center", color: "var(--color-bg)", fontWeight: 700 }}>
             S
@@ -134,37 +139,35 @@ export function ClinicianApp({
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 21 }}>SMART@Home</div>
         </div>
         {!consult ? (
-          <nav style={{ display: "flex", gap: 4, padding: 4, background: "var(--color-surface)", borderRadius: 999 }}>
+          <nav className="tabs" aria-label="Clinician views">
             {(
               [
-                ["overview", "Overview"],
-                ["timeline", "Timeline & records"],
-                ["ask", "Ask the data"],
-                ["summary", "Visit summary"],
+                ["overview", "Overview", "Overview"],
+                ["timeline", "Timeline & records", "Timeline"],
+                ["ask", "Ask the data", "Ask"],
+                ["summary", "Visit summary", "Summary"],
               ] as const
-            ).map(([id, label]) => (
+            ).map(([id, label, shortLabel]) => (
               <button
                 key={id}
                 type="button"
+                className="tab"
+                aria-current={view === id ? "page" : undefined}
                 onClick={() => { setView(id); setConsult(false); }}
                 style={{
-                  border: 0,
-                  cursor: "pointer",
-                  font: "600 13px var(--font-body)",
-                  padding: "8px 16px",
-                  borderRadius: 999,
                   background: view === id ? "var(--color-text)" : "transparent",
                   color: view === id ? "var(--color-bg)" : "var(--color-text)",
                 }}
               >
-                {label}
+                <span className="hide-phone">{label}</span>
+                <span className="only-phone">{shortLabel}</span>
               </button>
             ))}
           </nav>
         ) : null}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="header-tools">
           <span className="muted" style={{ fontSize: 12 }}>Synthetic dataset — not a real patient</span>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="patient-form">
             <label className="muted" htmlFor="patient" style={{ fontSize: 12, alignSelf: "center" }}>Patient</label>
             <select
               id="patient"
@@ -186,13 +189,13 @@ export function ClinicianApp({
         </div>
       </header>
 
-      <section style={{ padding: "6px 32px 22px", display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
+      <section className="hero">
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--color-accent-2-200)", color: "var(--color-accent-2-800)", display: "grid", placeItems: "center", fontFamily: "var(--font-heading)", fontSize: 20 }}>
             {model.patient.initials}
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 34 }}>{model.patient.name}</h1>
+            <h1 className="patient-name">{model.patient.name}</h1>
             <div className="muted" style={{ fontSize: 14 }}>{model.visitLabel}</div>
           </div>
         </div>
@@ -215,19 +218,16 @@ export function ClinicianApp({
           </div>
         ) : null}
         {!consult && view === "overview" ? (
-          <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div className="layout-tools">
             <span className="muted" style={{ fontSize: 12 }}>Layout</span>
             {Object.entries(PRESETS).map(([key, item]) => (
               <button
                 key={key}
                 type="button"
+                className="preset"
+                aria-pressed={preset === key}
                 onClick={() => { setPreset(key); setLayout(layoutFor(key, model.patient.kind)); }}
                 style={{
-                  border: 0,
-                  cursor: "pointer",
-                  font: "600 12px var(--font-body)",
-                  padding: "6px 12px",
-                  borderRadius: 999,
                   background: preset === key ? "var(--color-accent)" : "transparent",
                   color: preset === key ? "var(--color-bg)" : "var(--color-text)",
                 }}
@@ -241,13 +241,13 @@ export function ClinicianApp({
       </section>
 
       {model.scenario ? (
-        <p className="muted" style={{ margin: "0 32px 18px", fontSize: 13 }}>
+        <p className="muted scenario">
           <strong style={{ color: "var(--color-text)" }}>Scenario note, synthetic ground truth. </strong>
           {model.scenario}
         </p>
       ) : null}
 
-      <main style={{ padding: "0 32px 56px" }}>
+      <main className="page-main">
         {!consult && view === "overview" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <form
@@ -258,7 +258,7 @@ export function ClinicianApp({
                 value={askInput}
                 onChange={(event) => setAskInput(event.target.value)}
                 placeholder={`Ask about ${model.patient.name.split(" ")[0]}’s data`}
-                style={{ flex: 1, border: 0, background: "transparent", font: "15px var(--font-body)", color: "var(--color-text)", outline: "none", minWidth: 120 }}
+                className="ask-input"
               />
               <button className="btn btn-primary" type="submit">Ask</button>
             </form>
@@ -344,7 +344,7 @@ function Snapshot({ model, onOpen, onTimeline }: { model: ClinicianModel; onOpen
         <h3 style={{ margin: 0, fontSize: 21 }}>30-second snapshot</h3>
         <span className="muted" style={{ fontSize: 13 }}>Patient-reported unless noted · open a figure for that day</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(210px, 100%), 1fr))", gap: 12 }}>
         {model.cards.map((card) => (
           <button
             key={card.kicker}
@@ -380,30 +380,31 @@ function DayStrip({ days, onOpen }: { days: DayView[]; onOpen: (index: number) =
         <span style={{ fontWeight: 700, color: "var(--color-text)" }}>Reported days</span>
         <span>Filled = symptoms or headache · pale = logged without those · dashed = no entry</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, gap: 3 }}>
+      <div className="day-strip" style={{ "--day-count": days.length } as CSSProperties}>
         {days.map((day, index) => {
           const marked = day.symptoms.length > 0 || day.headache === true;
           return (
             <button
               key={day.date}
               type="button"
+              className="day-cell"
               title={`${day.short}${day.logged ? "" : " · no entry"}`}
+              aria-label={`${day.short}: ${!day.logged ? "no entry" : marked ? "symptoms or headache reported" : "logged without symptoms or headache"}`}
               onClick={() => onOpen(index)}
               style={{
-                height: 22,
-                borderRadius: 999,
-                cursor: "pointer",
                 background: !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)",
                 border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)",
                 opacity: day.active ? 1 : 0.35,
               }}
-            />
+            >
+              <span className="only-phone">{day.num}</span>
+            </button>
           );
         })}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }} className="faint">
         <span>{days[0].short}</span>
-        <span>{days[14].short}</span>
+        <span className="hide-phone">{days[14].short}</span>
         <span>{days[days.length - 1].short}</span>
       </div>
     </div>
@@ -437,7 +438,7 @@ function Lung({ model, chart, showQ, onToggle, onOpen }: { model: ClinicianModel
   return (
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: "1 1 240px" }}>
           <h3 style={{ margin: 0, fontSize: 21 }}>Lung function (FEV1)</h3>
           <div className="muted" style={{ fontSize: 13 }}>Home spirometer · best blow per day · passed means accepted and quality check Accept</div>
         </div>
@@ -466,15 +467,14 @@ function ChartFrame({ chart, points, height, onOpen }: { chart: Chart; points: C
           <button
             key={point.index}
             type="button"
+            className="chart-point"
             title={point.title}
+            aria-label={point.title}
             onClick={() => onOpen(point.index)}
             style={{
               position: "absolute",
               left: point.left,
               top: point.top,
-              width: 14,
-              height: 14,
-              margin: "-7px 0 0 -7px",
               borderRadius: "50%",
               background: point.ok ? "var(--color-accent-2-700)" : "var(--color-neutral-100)",
               border: point.ok ? "2px solid var(--color-surface)" : "2.5px solid var(--color-accent-600)",
@@ -498,7 +498,7 @@ function Compare({ model }: { model: ClinicianModel }) {
         <div className="muted" style={{ fontSize: 13 }}>{model.halfLabel.before} versus {model.halfLabel.after}</div>
       </div>
       {model.compare.map((row) => (
-        <div key={row.label} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 170px) minmax(0, 1fr)", gap: 12, alignItems: "center" }}>
+        <div key={row.label} className="compare-row">
           <div>
             <div style={{ fontSize: 13, fontWeight: 700 }}>{row.label}</div>
             <div className="faint" style={{ fontSize: 11 }}>{row.note}</div>
@@ -523,7 +523,7 @@ function Review({ model, onOpen }: { model: ClinicianModel; onOpen: (index: numb
       </div>
       {model.review.length === 0 ? <div className="muted">Nothing in this window met the review rules.</div> : null}
       {model.review.map((row) => (
-        <button key={row.title} type="button" className="hit" onClick={() => onOpen(row.day)} style={{ display: "grid", gridTemplateColumns: "96px minmax(0, 1fr)", gap: 12, alignItems: "center", padding: "10px 12px" }}>
+        <button key={row.title} type="button" className="hit review-row" onClick={() => onOpen(row.day)}>
           <span className={`tag ${row.tone === "warn" ? "tag-accent" : row.tone === "good" ? "tag-accent-2" : "tag-neutral"}`}>{row.sev}</span>
           <div>
             <div style={{ fontWeight: 700, fontSize: 14 }}>{row.title}</div>
@@ -537,17 +537,30 @@ function Review({ model, onOpen }: { model: ClinicianModel; onOpen: (index: numb
 
 function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianModel; chart: Chart; compact?: boolean; onOpen: (index: number) => void; onFull?: () => void }) {
   const days = model.days;
+  const scroller = useRef<HTMLDivElement>(null);
+
+  // On narrow screens the 28 days overflow; open on the most recent ones.
+  useEffect(() => {
+    const element = scroller.current;
+    if (element) element.scrollLeft = element.scrollWidth;
+  }, []);
+
   return (
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
         <div style={{ flex: 1 }}>
           <h3 style={{ margin: 0, fontSize: 21 }}>Synchronized timeline</h3>
-          <div className="muted" style={{ fontSize: 13 }}>Aligned by date · select a column for the submissions</div>
+          <div className="muted" style={{ fontSize: 13 }}>Aligned by date · select a column for the submissions<span className="scroll-hint"> · swipe right for earlier days</span></div>
         </div>
         {onFull ? <button className="btn btn-ghost" type="button" onClick={onFull}>Full timeline & records →</button> : null}
       </div>
-      <div className="scroll-x">
+      <div className="scroll-x" ref={scroller} tabIndex={0} role="region" aria-label="Timeline by date, scrollable">
         <div className="track" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="timeline-dates">
+            <Row label="Date">
+              {days.map((day) => <span key={day.date} className="faint" style={{ fontSize: 11, textAlign: "center" }} title={day.short}>{day.num}</span>)}
+            </Row>
+          </div>
           <Row label="Reported">
             {days.map((day, index) => {
               const marked = day.symptoms.length > 0 || day.headache === true;
@@ -581,14 +594,14 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
             ))}
           </Row>
           {model.patient.kind === "asthma" ? (
-            <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0, 1fr)", alignItems: "center" }}>
-              <div style={{ fontSize: 12, fontWeight: 700 }}>FEV1</div>
+            <div className="tl-row">
+              <div className="tl-label">FEV1</div>
               <div style={{ position: "relative", height: compact ? 56 : 90 }}>
                 <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
                   <path d={chart.path} fill="none" stroke="var(--color-accent-2-600)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
                 </svg>
                 {chart.points.map((point) => (
-                  <button key={point.index} type="button" title={point.title} onClick={() => onOpen(point.index)} style={{ position: "absolute", left: point.left, top: point.top, width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: point.ok ? "var(--color-accent-2-700)" : "transparent", border: point.ok ? "0" : "2px solid var(--color-accent-600)" }} />
+                  <button key={point.index} type="button" className="timeline-point" title={point.title} aria-label={point.title} onClick={() => onOpen(point.index)} style={{ position: "absolute", left: point.left, top: point.top, width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: point.ok ? "var(--color-accent-2-700)" : "transparent", border: point.ok ? "0" : "2px solid var(--color-accent-600)" }} />
                 ))}
               </div>
             </div>
@@ -601,9 +614,9 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "110px minmax(0, 1fr)", alignItems: "center" }}>
-      <div style={{ fontSize: 12, fontWeight: 700 }}>{label}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(28, minmax(0, 1fr))", gap: 3 }}>{children}</div>
+    <div className="tl-row">
+      <div className="tl-label">{label}</div>
+      <div className="tl-cells" style={{ display: "grid", gridTemplateColumns: "repeat(28, minmax(0, 1fr))", gap: 3 }}>{children}</div>
     </div>
   );
 }
@@ -617,12 +630,12 @@ function Meds({ model, onOpen }: { model: ClinicianModel; onOpen: (index: number
         <h3 style={{ margin: 0, fontSize: 21 }}>Medication reporting</h3>
         <div className="muted" style={{ fontSize: 13 }}>{model.dailyMedName ?? "No daily medication"} · a mark means an administration was recorded</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: "var(--cal-gap, 6px)" }}>
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
           <div key={label} className="faint" style={{ fontSize: 11, textAlign: "center", fontWeight: 700 }}>{label}</div>
         ))}
         {cells.map((day, index) => (
-          <button key={day?.date ?? `blank-${index}`} type="button" onClick={() => day && onOpen(model.days.indexOf(day))} style={{ border: 0, background: "transparent", borderRadius: 14, padding: 5, opacity: day?.active === false ? 0.35 : 1, cursor: day ? "pointer" : "default" }}>
+          <button key={day?.date ?? `blank-${index}`} type="button" onClick={() => day && onOpen(model.days.indexOf(day))} className="med-cell" style={{ border: 0, background: "transparent", borderRadius: 14, opacity: day?.active === false ? 0.35 : 1, cursor: day ? "pointer" : "default" }}>
             <div className="muted" style={{ fontSize: 11 }}>{day ? day.num : ""}</div>
             <div style={{ display: "flex", gap: 2 }}>
               {(day?.slots.length ? day.slots : day ? ["open" as const] : []).map((slot, slotIndex) => {
@@ -676,33 +689,37 @@ function Plan({ model }: { model: ClinicianModel }) {
 }
 
 function Records({ model, onOpen }: { model: ClinicianModel; onOpen: (index: number) => void }) {
+  const eventLabel = model.patient.kind === "migraine" ? "Headache" : "Rescue";
   return (
-    <article className="card scroll-x" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <article className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
         <h3 style={{ margin: 0, fontSize: 21 }}>Daily records</h3>
         <span className="muted" style={{ fontSize: 13 }}>Select a row for submissions, doses, and spirometer blows</span>
         <button className="btn btn-secondary" type="button" style={{ marginLeft: "auto" }} onClick={() => download(`${model.patient.file.replace(".json", "")}-daily.csv`, model.csv, "text/csv")}>Download CSV</button>
       </div>
-      <table className="table" style={{ minWidth: 860 }}>
-        <thead>
-          <tr>
-            <th>Date</th><th>Feeling</th><th>Symptoms</th><th>{model.patient.kind === "migraine" ? "Headache" : "Rescue"}</th><th>Daily med</th><th>FEV1</th><th>Entries</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...model.days].reverse().map((day) => (
-            <tr key={day.date} onClick={() => onOpen(model.days.indexOf(day))} style={{ cursor: "pointer" }}>
-              <td style={{ fontWeight: 700 }}>{day.dow} {day.short}</td>
-              <td>{day.feeling ?? "—"}</td>
-              <td style={{ fontSize: 13 }}>{day.logged ? day.symptoms.join(", ") || "None" : "—"}</td>
-              <td>{model.patient.kind === "migraine" ? (day.headache == null ? "—" : day.headache ? "Yes" : "No") : (day.rescue ?? "—")}</td>
-              <td>{day.slots.length ? day.slots.map((slot) => (slot === "taken" ? "Marked" : "Not marked")).join(" / ") : "—"}</td>
-              <td>{day.fev1 == null ? "—" : `${day.fev1.toFixed(2)} L${day.fevOk ? "" : " · flagged"}`}</td>
-              <td>{day.entries}</td>
+      {/* Explicit roles: the phone layout restyles these rows as stacked cards, which drops native table semantics. */}
+      <div className="scroll-x">
+        <table className="table records-table" role="table">
+          <thead role="rowgroup">
+            <tr role="row">
+              <th role="columnheader">Date</th><th role="columnheader">Feeling</th><th role="columnheader">Symptoms</th><th role="columnheader">{eventLabel}</th><th role="columnheader">Daily med</th><th role="columnheader">FEV1</th><th role="columnheader">Entries</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody role="rowgroup">
+            {[...model.days].reverse().map((day) => (
+              <tr key={day.date} role="row" onClick={() => onOpen(model.days.indexOf(day))} style={{ cursor: "pointer" }}>
+                <td role="cell" className="rec-date" style={{ fontWeight: 700 }}>{day.dow} {day.short}</td>
+                <td role="cell" data-label="Feeling">{day.feeling ?? "—"}</td>
+                <td role="cell" className="rec-wide" data-label="Symptoms" style={{ fontSize: 13 }}>{day.logged ? day.symptoms.join(", ") || "None" : "—"}</td>
+                <td role="cell" data-label={eventLabel}>{model.patient.kind === "migraine" ? (day.headache == null ? "—" : day.headache ? "Yes" : "No") : (day.rescue ?? "—")}</td>
+                <td role="cell" className="rec-med" data-label="Daily med">{day.slots.length ? day.slots.map((slot) => (slot === "taken" ? "Marked" : "Not marked")).join(" / ") : "—"}</td>
+                <td role="cell" data-label="FEV1">{day.fev1 == null ? "—" : `${day.fev1.toFixed(2)} L${day.fevOk ? "" : " · flagged"}`}</td>
+                <td role="cell" data-label="Entries">{day.entries}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </article>
   );
 }
@@ -718,9 +735,16 @@ function Ask({
   onAsk: (question: string) => void;
   onOpenDate: (date: string) => void;
 }) {
+  const latest = useRef<HTMLDivElement>(null);
+
+  // When stacked, suggestions sit below the conversation, so a new answer can land off-screen.
+  useEffect(() => {
+    if (msgs.length) latest.current?.scrollIntoView({ block: "nearest" });
+  }, [msgs.length]);
+
   return (
     <div className="split" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(240px, 320px)", gap: 20, alignItems: "start" }}>
-      <article className="card" style={{ display: "flex", flexDirection: "column", gap: 16, minHeight: 520 }}>
+      <article className="card ask-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
           <h3 style={{ margin: 0, fontSize: 21 }}>Ask the data</h3>
           <div className="muted" style={{ fontSize: 13 }}>Answers use only this patient’s records in the 28-day window.</div>
@@ -743,9 +767,10 @@ function Ask({
               </div>
             </div>
           ))}
+          <div ref={latest} className="ask-latest" />
         </div>
         <form style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 6px 6px 18px", background: "var(--color-neutral-100)", borderRadius: 999 }} onSubmit={(event) => { event.preventDefault(); onAsk(askInput); }}>
-          <input value={askInput} onChange={(event) => setAskInput(event.target.value)} placeholder="Ask about symptoms, medication, lung function, gaps…" style={{ flex: 1, border: 0, background: "transparent", font: "15px var(--font-body)", color: "var(--color-text)", outline: "none" }} />
+          <input value={askInput} onChange={(event) => setAskInput(event.target.value)} placeholder="Ask about symptoms, medication, lung function, gaps…" className="ask-input" />
           <button className="btn btn-primary" type="submit">Ask</button>
         </form>
       </article>
@@ -767,14 +792,14 @@ function Ask({
 function Summary({ model, copied, onCopy }: { model: ClinicianModel; copied: boolean; onCopy: () => void }) {
   return (
     <div className="split" style={{ display: "grid", gridTemplateColumns: "minmax(0, 760px) minmax(220px, 300px)", gap: 20, alignItems: "start" }}>
-      <article style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-lg)", padding: "32px 36px", boxShadow: "var(--shadow-md)", display: "flex", flexDirection: "column", gap: 18 }}>
+      <article className="summary-doc" style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)", display: "flex", flexDirection: "column", gap: 18 }}>
         <div>
           <div className="kicker" style={{ color: "var(--color-accent-700)" }}>Visit summary · factual findings</div>
-          <h2 style={{ margin: "4px 0 0", fontSize: 28 }}>{model.patient.name}, {model.patient.age} y — {model.patient.trackerName}</h2>
+          <h2 className="summary-title" style={{ margin: "4px 0 0" }}>{model.patient.name}, {model.patient.age} y — {model.patient.trackerName}</h2>
           <div className="muted" style={{ fontSize: 13 }}>{model.rangeLabel}</div>
         </div>
         {model.summary.map((section) => (
-          <div key={section.title} style={{ display: "grid", gridTemplateColumns: "150px minmax(0, 1fr)", gap: 16 }}>
+          <div key={section.title} className="summary-row">
             <div style={{ fontWeight: 700, fontSize: 13 }}>{section.title}</div>
             <div style={{ fontSize: 14, lineHeight: 1.6 }}>{section.text}</div>
           </div>
@@ -796,20 +821,20 @@ function Consult({ model, chart }: { model: ClinicianModel; chart: Chart }) {
   const hard = model.days.filter((day) => day.logged && (day.symptoms.length > 0 || day.headache === true)).length;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <h2 style={{ margin: 0, fontSize: 48 }}>{model.patient.name.split(" ")[0]}’s last 4 weeks</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
-        <article className="card" style={{ borderRadius: 36, padding: 32 }}>
+      <h2 className="consult-title">{model.patient.name.split(" ")[0]}’s last 4 weeks</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 24 }}>
+        <article className="card consult-card">
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>How the days were reported</div>
           <div style={{ fontSize: 22, marginTop: 12 }}><b>{good} quieter days</b>, {hard} days with symptoms or headache</div>
         </article>
-        <article className="card" style={{ borderRadius: 36, padding: 32 }}>
+        <article className="card consult-card">
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>Daily medicine</div>
           <div style={{ fontSize: 22, marginTop: 12 }}>Marked taken <b>{model.doseLegend.taken}</b> times. Not marked <b>{model.doseLegend.open}</b> times.</div>
           <div className="muted" style={{ marginTop: 8 }}>A missing mark is not proof a dose was skipped.</div>
         </article>
       </div>
       {model.patient.kind === "asthma" ? (
-        <article className="card" style={{ borderRadius: 36, padding: 32 }}>
+        <article className="card consult-card">
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>Breathing test</div>
           <div style={{ fontSize: 18, margin: "8px 0 16px" }}>Air blown out in one second, using blows that passed the device check. Higher on the chart is a larger volume.</div>
           <ChartFrame chart={chart} points={chart.points.filter((point) => point.ok)} height={240} onOpen={() => undefined} />
@@ -823,7 +848,7 @@ function Drawer({ day, onClose, onPrev, onNext }: { day: DayView; onClose: () =>
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "color-mix(in srgb, var(--color-neutral-900) 35%, transparent)", zIndex: 20 }} />
-      <aside style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(480px, 100%)", background: "var(--color-bg)", boxShadow: "var(--shadow-lg)", zIndex: 21, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+      <aside className="drawer" style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(480px, 100%)", background: "var(--color-bg)", boxShadow: "var(--shadow-lg)", zIndex: 21, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-secondary btn-icon" type="button" onClick={onPrev} aria-label="Previous day">‹</button>
           <button className="btn btn-secondary btn-icon" type="button" onClick={onNext} aria-label="Next day">›</button>
@@ -858,6 +883,7 @@ function Drawer({ day, onClose, onPrev, onNext }: { day: DayView; onClose: () =>
         {day.blows.length ? (
           <section>
             <h4 style={{ margin: "0 0 8px", fontSize: 17 }}>Spirometer blows</h4>
+            <div className="scroll-x">
             <table className="table" style={{ fontSize: 13 }}>
               <thead><tr><th>#</th><th>FEV1</th><th>FVC</th><th>Peak flow</th><th>Quality</th></tr></thead>
               <tbody>
@@ -869,6 +895,7 @@ function Drawer({ day, onClose, onPrev, onNext }: { day: DayView; onClose: () =>
                 ))}
               </tbody>
             </table>
+            </div>
             <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Bold is the best blow, the one used on the chart. Peak flow is converted from liters per second.</div>
           </section>
         ) : null}
@@ -889,7 +916,7 @@ function Customize({
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "color-mix(in srgb, var(--color-neutral-900) 35%, transparent)", zIndex: 20 }} />
-      <aside style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(440px, 100%)", background: "var(--color-bg)", boxShadow: "var(--shadow-lg)", zIndex: 21, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+      <aside className="drawer" style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(440px, 100%)", background: "var(--color-bg)", boxShadow: "var(--shadow-lg)", zIndex: 21, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <h2 style={{ margin: 0, fontSize: 26, flex: 1 }}>Customise dashboard</h2>
           <button className="btn btn-ghost" type="button" onClick={onClose}>Close</button>
@@ -906,7 +933,7 @@ function Customize({
               <div style={{ fontWeight: 700, fontSize: 14 }}>{WIDGETS[item.id].name}</div>
               <div className="muted" style={{ fontSize: 12 }}>{WIDGETS[item.id].desc}</div>
             </div>
-            <button type="button" className="tag tag-neutral" style={{ border: 0, cursor: "pointer" }} onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, wide: !widget.wide } : widget))}>{item.wide ? "Wide" : "Half"}</button>
+            <button type="button" className="tag tag-neutral hide-phone" style={{ border: 0, cursor: "pointer" }} onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, wide: !widget.wide } : widget))}>{item.wide ? "Wide" : "Half"}</button>
             <button type="button" className="btn btn-secondary" onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, on: !widget.on } : widget))}>{item.on ? "Hide" : "Show"}</button>
           </div>
         ))}
