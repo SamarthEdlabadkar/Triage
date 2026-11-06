@@ -26,7 +26,12 @@ export function TimelineWidget({ model, chart, onOpen }: { model: ClinicianModel
         <div className="track" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div className="timeline-dates">
             <Row label="Date">
-              {days.map((day) => <span key={day.date} className="faint" style={{ fontSize: 11, textAlign: "center" }} title={day.short}>{day.num}</span>)}
+              {days.map((day, index) => (
+                <button key={day.date} type="button" className="timeline-date" title={day.long} aria-label={`Open ${day.long}`} onClick={() => onOpen(index)}>
+                  <span className="timeline-month">{index === 0 || day.num === 1 ? day.short.split(" ")[0] : "\u00a0"}</span>
+                  <span>{day.num}</span>
+                </button>
+              ))}
             </Row>
           </div>
           <Row label="Reported">
@@ -35,6 +40,13 @@ export function TimelineWidget({ model, chart, onOpen }: { model: ClinicianModel
               return <button key={day.date} type="button" onClick={() => onOpen(index)} style={{ height: 16, borderRadius: 999, background: !day.active || !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)", border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)", opacity: day.active ? 1 : 0.35 }} />;
             })}
           </Row>
+          {days.some((day) => day.feeling) ? <Row label="Mood">
+            {days.map((day, index) => (
+              <button key={day.date} type="button" className="timeline-mood" title={`${day.long}: ${day.feeling ?? "no mood reported"}`} aria-label={`Open ${day.long}: ${day.feeling ?? "no mood reported"}`} onClick={() => onOpen(index)}>
+                {day.feeling ?? "—"}
+              </button>
+            ))}
+          </Row> : null}
           {days.some((day) => day.symptoms.length || day.headache !== null) ? <Row label="Symptoms">
             {days.map((day, index) => (
               <button key={day.date} type="button" title={day.symptoms.join(", ")} onClick={() => onOpen(index)} style={{ display: "grid", placeItems: "center", height: 28 }}>

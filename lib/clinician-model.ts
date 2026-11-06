@@ -654,7 +654,7 @@ export function buildClinicianModel(
     kicker: "Daily medication reported taken",
     value: allDoses.pct == null ? "—" : `${allDoses.pct}%`,
     unit: "",
-    line: allDoses.n ? "Patient-reported scheduled administrations" : "No scheduled administrations in this window",
+    line: allDoses.n ? `${allDoses.taken} doses marked. ${allDoses.open} doses not marked.` : "No scheduled administrations in this window",
     note: "Self-reported. Not marked is not the same as a skipped dose.",
     bar: null,
     day: null,

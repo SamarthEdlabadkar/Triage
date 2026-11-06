@@ -53,6 +53,13 @@
 .drawer { padding: 24px; overscroll-behavior: contain; }
 
 .tl-row { display: grid; grid-template-columns: var(--tl-label-width, 110px) minmax(0, 1fr); align-items: center; }
+.timeline-date { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0; border: 0; border-radius: 6px; background: transparent; color: var(--color-text); font: 600 11px var(--font-body); cursor: pointer; }
+.timeline-date:hover { background: var(--color-neutral-100); }
+.timeline-date:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.timeline-month { color: var(--color-neutral-700); font-size: 10px; font-weight: 400; }
+.timeline-mood { min-width: 0; padding: 3px 0; border: 0; border-radius: 6px; background: transparent; color: var(--color-text); font: 600 10px var(--font-body); white-space: nowrap; cursor: pointer; }
+.timeline-mood:hover { background: var(--color-neutral-100); }
+.timeline-mood:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
 /* Stays in view while the days scroll beneath it, so each row keeps its name. */
 .tl-label {
   position: sticky;
@@ -216,7 +223,7 @@
 .faint { color: var(--color-neutral-600); }
 
 .scroll-x { overflow-x: auto; }
-.track { min-width: 880px; }
+.track { min-width: 1120px; }
 
 .select {
   border: 1px solid var(--color-divider);
@@ -307,10 +314,6 @@
   .scroll-hint { display: inline; }
   .snapshot { grid-template-columns: minmax(0, 1fr); }
   .month-calendar { padding-left: 0; padding-top: 20px; border-left: 0; border-top: 1px solid var(--color-divider); }
-}
-
-@media (min-width: 981px) {
-  .timeline-dates { display: none; }
 }
 
 @media (pointer: coarse) {

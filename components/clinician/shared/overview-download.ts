@@ -42,6 +42,7 @@ export async function downloadOverviewPdf(model: ClinicianModel, visible: Widget
     } else if (id === "timeline") {
       for (const day of model.days.filter((item) => item.logged || item.fev1 != null || item.doses.length)) {
         const parts = [`${day.short}: ${day.logged ? "tracker entry" : "no tracker entry"}`];
+        if (day.feeling) parts.push(`mood ${day.feeling}`);
         if (day.symptoms.length) parts.push(`symptoms ${day.symptoms.join(", ")}`);
         if (day.fev1 != null) parts.push(`FEV1 ${day.fev1.toFixed(2)} L`);
         if (day.slots.length) parts.push(`${day.slots.filter((slot) => slot === "taken").length}/${day.slots.length} doses marked`);
