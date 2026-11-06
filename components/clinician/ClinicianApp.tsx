@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 
 import {
@@ -89,6 +90,7 @@ export function ClinicianApp({
   const [asking, setAsking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [msgs, setMsgs] = useState<Array<{ role: "user" | "ai"; text: string; dates: string[] }>>([]);
+  const router = useRouter();
 
   const days = model.days;
   const chart = useMemo(() => buildChart(days, showQ), [days, showQ]);
@@ -115,6 +117,7 @@ export function ClinicianApp({
   }
 
   const visible = layout.filter((item) => item.on);
+  const trackers = patients.find((patient) => patient.file === model.patient.file)?.trackers ?? [];
   const href = (file: string, trackerId?: string) => {
     const params = new URLSearchParams({ patient: file });
     if (trackerId) params.set("tracker", trackerId);
@@ -129,7 +132,6 @@ export function ClinicianApp({
             S
           </div>
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 21 }}>SMART@Home</div>
-          <span className="tag tag-accent-2">Clinician view</span>
         </div>
         {!consult ? (
           <nav style={{ display: "flex", gap: 4, padding: 4, background: "var(--color-surface)", borderRadius: 999 }}>
@@ -162,15 +164,22 @@ export function ClinicianApp({
         ) : null}
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span className="muted" style={{ fontSize: 12 }}>Synthetic dataset — not a real patient</span>
-          <form action="/" method="get" style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
             <label className="muted" htmlFor="patient" style={{ fontSize: 12, alignSelf: "center" }}>Patient</label>
-            <select id="patient" name="patient" className="select" defaultValue={model.patient.file} key={model.patient.file}>
+            <select
+              id="patient"
+              className="select"
+              value={model.patient.file}
+              onChange={(event) => {
+                const file = event.target.value;
+                if (file && file !== model.patient.file) router.push(href(file));
+              }}
+            >
               {patients.map((patient) => (
                 <option key={patient.file} value={patient.file}>{patient.name}</option>
               ))}
             </select>
-            <button className="btn btn-secondary" type="submit">Open</button>
-          </form>
+          </div>
           <button className={`btn ${consult ? "btn-primary" : "btn-secondary"}`} type="button" onClick={() => { setConsult((value) => !value); setDay(null); }}>
             {consult ? "Exit consultation mode" : "Consultation mode"}
           </button>
@@ -187,18 +196,22 @@ export function ClinicianApp({
             <div className="muted" style={{ fontSize: 14 }}>{model.visitLabel}</div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span className="tag tag-neutral">{model.rangeLabel}</span>
-          <span className="tag tag-neutral">{model.patient.studyId}</span>
-          <span className="tag tag-accent-2">{model.lastEntry}</span>
-        </div>
-        {patients.find((patient) => patient.file === model.patient.file)?.trackers.length ? (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {patients.find((patient) => patient.file === model.patient.file)!.trackers.map((tracker) => (
-              <a key={tracker.id} href={href(model.patient.file, tracker.id)} className={`tag ${tracker.id === model.patient.trackerId ? "tag-accent" : "tag-outline"}`} style={{ textDecoration: "none" }}>
-                {tracker.name}
-              </a>
-            ))}
+        {trackers.length > 1 ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <label className="muted" htmlFor="tracker" style={{ fontSize: 12 }}>Tracker</label>
+            <select
+              id="tracker"
+              className="select"
+              value={model.patient.trackerId}
+              onChange={(event) => {
+                const trackerId = event.target.value;
+                if (trackerId && trackerId !== model.patient.trackerId) router.push(href(model.patient.file, trackerId));
+              }}
+            >
+              {trackers.map((tracker) => (
+                <option key={tracker.id} value={tracker.id}>{tracker.name}</option>
+              ))}
+            </select>
           </div>
         ) : null}
         {!consult && view === "overview" ? (
