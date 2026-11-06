@@ -15,7 +15,10 @@
 .app-header { display: flex; align-items: center; gap: 10px; padding: 12px 20px; flex-wrap: nowrap; overflow-x: auto; }
 .brand-cluster { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; white-space: nowrap; }
 .header-tools { order: 2; display: flex; gap: 8px; align-items: center; flex: 0 0 auto; white-space: nowrap; }
-.patient-form { display: flex; align-items: center; gap: 6px; }
+.patient-form { display: flex; align-items: center; gap: 7px; padding: 3px 4px 3px 12px; border: 1px solid var(--color-accent-2-600); border-radius: 999px; background: var(--color-accent-2-100); }
+.patient-form label { color: var(--color-accent-2-900); font-size: 12px; font-weight: 700; }
+.patient-form .select { border-color: transparent; background: var(--color-surface); box-shadow: var(--shadow-sm); font-size: 14px; font-weight: 700; }
+.patient-form .select:focus-visible { outline: 2px solid var(--color-accent-2-700); outline-offset: 2px; }
 .tabs { order: 1; display: flex; flex: 0 0 auto; gap: 2px; padding: 3px; background: var(--color-surface); border-radius: 999px; }
 .tab {
   border: 0;
@@ -35,18 +38,8 @@
   padding: 6px 8px;
   border-radius: 999px;
 }
-.page-main { padding: 0 32px 56px; }
-.ask-input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  font: 15px var(--font-body);
-  color: var(--color-text);
-  outline: none;
-}
-.ask-card { min-height: 520px; }
-.ask-latest { scroll-margin-bottom: 96px; }
+.page-main { padding: 24px 32px 56px; }
+.view-skeleton { display: flex; flex-direction: column; gap: 20px; }
 
 .day-strip { display: grid; grid-template-columns: repeat(var(--day-count), minmax(0, 1fr)); gap: 3px; }
 .day-cell { height: 22px; padding: 0; border-radius: 999px; cursor: pointer; color: var(--color-text); }
@@ -336,7 +329,7 @@
     bottom: calc(8px + env(safe-area-inset-bottom));
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     box-shadow: var(--shadow-lg);
   }
   .tab { min-height: 44px; padding: 8px 4px; }
@@ -347,14 +340,13 @@
   .layout-tools > .muted { width: 100%; }
   .preset { min-height: 44px; }
   .layout-tools > .btn { width: 100%; }
-  .page-main { padding: 0 16px 24px; }
+  .page-main { padding: 20px 16px 24px; }
 
   /* iOS Safari zooms the page when a focused control is under 16px. */
-  .ask-input, .select { font-size: 16px; }
+  .select { font-size: 16px; }
 
   .board { gap: 14px; }
   .card { padding: 16px; }
-  .ask-card { min-height: 0; }
   .snapshot { gap: 20px; }
   .snapshot-metrics { gap: 12px; }
   .calendar-header { flex-wrap: wrap; }
