@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/organic-e6834d6e-fce6-4963-9562-6075a72a4e0f/styles.css">
+<script src="_ds/organic-e6834d6e-fce6-4963-9562-6075a72a4e0f/_ds_bundle.js"></script>
+<style>body{margin:0;background:#f5ead8}a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-800)}@keyframes dotpulse{0%,100%{opacity:.3}50%{opacity:1}}</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);">
+
+<header style="display:flex;align-items:center;gap:20px;padding:16px 32px;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--color-accent);display:grid;place-items:center;color:var(--color-bg);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"></path><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"></path><path d="M9.8 4.4A2 2 0 1 1 11 8H2"></path></svg>
+    </div>
+    <div style="font-family:var(--font-heading);font-size:21px;">SMART@Home</div>
+    <span class="tag tag-accent-2">Clinician view</span>
+  </div>
+  <sc-if value="{{ notConsult }}" hint-placeholder-val="{{ true }}">
+    <nav style="display:flex;gap:4px;padding:4px;background:var(--color-surface);border-radius:999px;">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+        <button onClick="{{ t.go }}" style="border:0;cursor:pointer;font:600 13px var(--font-body);padding:8px 16px;border-radius:999px;background:{{ t.bg }};color:{{ t.fg }};">{{ t.label }}</button>
+      </sc-for>
+    </nav>
+  </sc-if>
+  <div style="margin-left:auto;display:flex;gap:10px;align-items:center;">
+    <span style="font-size:12px;color:var(--color-neutral-700);">Demo data — not a real patient</span>
+    <button class="btn {{ consultCls }}" onClick="{{ toggleConsult }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      {{ consultLabel }}
+    </button>
+  </div>
+</header>
+
+<section style="padding:6px 32px 22px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+  <div style="display:flex;gap:16px;align-items:center;">
+    <div style="width:56px;height:56px;border-radius:50%;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:grid;place-items:center;font-family:var(--font-heading);font-size:20px;">MT</div>
+    <div>
+      <h1 style="margin:0;font-size:34px;">Maya Thompson</h1>
+      <div style="font-size:14px;color:var(--color-neutral-700);">14 years · Asthma tracker · Visit today, Wed May 6, 2026</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <span class="tag tag-neutral">Apr 8 – May 5 · 28 days</span>
+    <span class="tag tag-neutral">Last visit Apr 7</span>
+    <span class="tag tag-accent-2">{{ lastEntry }}</span>
+  </div>
+  <sc-if value="{{ showDash }}" hint-placeholder-val="{{ true }}">
+    <div style="margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--color-neutral-700);">Layout</span>
+      <div style="display:flex;gap:2px;padding:3px;border-radius:999px;border:1px solid var(--color-divider);">
+        <sc-for list="{{ presetBtns }}" as="p" hint-placeholder-count="4">
+          <button onClick="{{ p.go }}" style="border:0;cursor:pointer;font:600 12px var(--font-body);padding:6px 12px;border-radius:999px;background:{{ p.bg }};color:{{ p.fg }};">{{ p.label }}</button>
+        </sc-for>
+      </div>
+      <button class="btn btn-secondary" onClick="{{ openCustom }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg>
+        Customise
+      </button>
+    </div>
+  </sc-if>
+</section>
+
+<main style="padding:0 32px 56px;">
+
+<!-- ================= OVERVIEW ================= -->
+<sc-if value="{{ showDash }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:20px;">
+
+  <sc-if value="{{ showAskBar }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;align-items:center;gap:12px;padding:8px 8px 8px 20px;background:var(--color-neutral-100);border-radius:999px;box-shadow:var(--shadow-sm);">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"></path></svg>
+    <input value="{{ askInput }}" onChange="{{ onAskInput }}" onKeyDown="{{ onAskKeyJump }}" placeholder="Ask about Maya’s data — e.g. “Is she taking her controller?”" style="flex:1;border:0;background:transparent;font:15px var(--font-body);color:var(--color-text);outline:none;min-width:120px;">
+    <button class="btn btn-primary" onClick="{{ askFromBar }}">Ask</button>
+  </div>
+  </sc-if>
+
+  <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;grid-auto-flow:row dense;">
+
+    <!-- Snapshot -->
+    <sc-if value="{{ on.snapshot }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.snapshot }};grid-column:span {{ sp.snapshot }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:18px;min-width:0;">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+        <h3 style="margin:0;font-size:21px;">30-second snapshot</h3>
+        <span style="font-size:13px;color:var(--color-neutral-700);">Patient-reported unless noted · tap any figure for records</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;">
+        <div onClick="{{ goTimeline }}" style="cursor:pointer;background:var(--color-neutral-100);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;" style-hover="box-shadow:var(--shadow-md);">
+          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600;">Symptoms</div>
+          <div style="font-family:var(--font-heading);font-size:34px;line-height:1.1;">{{ S.symDays }}<span style="font-size:18px;color:var(--color-neutral-600);"> / {{ S.logged }} days</span></div>
+          <div style="font-size:13px;">had symptoms · most often {{ S.topSym }}</div>
+          <div style="font-size:12px;color:var(--color-accent-2-700);font-weight:600;">{{ S.symA }} of {{ S.logA }} days since Apr 21 switch</div>
+        </div>
+        <div onClick="{{ goMeds }}" style="cursor:pointer;background:var(--color-neutral-100);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;" style-hover="box-shadow:var(--shadow-md);">
+          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600;">Controller reported taken</div>
+          <div style="font-family:var(--font-heading);font-size:34px;line-height:1.1;">{{ S.dAll.pct }}%<span style="font-size:18px;color:var(--color-neutral-600);"> of {{ S.dAll.n }} doses</span></div>
+          <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;gap:2px;">
+            <div style="flex:{{ S.dAll.t }};background:var(--color-accent-2-600);"></div>
+            <div style="flex:{{ S.dAll.s }};background:var(--color-accent-500);"></div>
+            <div style="flex:{{ S.dAll.u }};background:var(--color-neutral-300);"></div>
+          </div>
+          <div style="font-size:12px;color:var(--color-neutral-700);">{{ S.dAll.t }} taken · {{ S.dAll.s }} skipped · {{ S.dAll.u }} unreported</div>
+        </div>
+        <div onClick="{{ openLatestFev }}" style="cursor:pointer;background:var(--color-neutral-100);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;" style-hover="box-shadow:var(--shadow-md);">
+          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600;">Lung function · device</div>
+          <div style="font-family:var(--font-heading);font-size:34px;line-height:1.1;">{{ S.latest }} L<span style="font-size:18px;color:var(--color-neutral-600);"> FEV1</span></div>
+          <div style="font-size:13px;">Latest reliable · {{ S.latestPct }}% predicted</div>
+          <div style="font-size:12px;color:var(--color-accent-2-700);font-weight:600;">+{{ S.fevDelta }} L since Apr 8 · {{ S.flagged }} readings flagged</div>
+        </div>
+        <div onClick="{{ goTimeline }}" style="cursor:pointer;background:var(--color-neutral-100);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;" style-hover="box-shadow:var(--shadow-md);">
+          <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700);font-weight:600;">Data gaps</div>
+          <div style="font-family:var(--font-heading);font-size:34px;line-height:1.1;">{{ S.gapCount }}<span style="font-size:18px;color:var(--color-neutral-600);"> days</span></div>
+          <div style="font-size:13px;">with no entries · {{ S.gapText }}</div>
+          <div style="font-size:12px;color:var(--color-accent-700);font-weight:600;">+ {{ S.blanks }} blank submissions</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--color-neutral-700);">
+          <span style="font-weight:600;color:var(--color-text);">Action-plan zone by day</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-accent-2-500);"></span>Green {{ S.green }}</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:oklch(0.82 0.12 82);"></span>Yellow {{ S.yellow }}</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:oklch(0.56 0.16 32);"></span>Red 0</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;border:1.5px dashed var(--color-neutral-500);"></span>No entry {{ S.gapCount }}</span>
+          <span style="white-space:nowrap;">Rescue inhaler {{ S.rescueAll }} uses</span><span style="white-space:nowrap;">School missed {{ S.school }} days</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:3px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28">
+            <div onClick="{{ c.open }}" title="{{ c.title }}" style="height:22px;border-radius:999px;background:{{ c.zoneBg }};border:{{ c.zoneBd }};cursor:pointer;" style-hover="transform:scaleY(1.25);"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-neutral-600);"><span>Apr 8</span><span>Apr 21 · controller switched</span><span>May 5</span></div>
+      </div>
+    </article>
+    </sc-if>
+
+    <!-- What changed -->
+    <sc-if value="{{ on.changed }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.changed }};grid-column:span {{ sp.changed }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0;">
+      <div>
+        <h3 style="margin:0;font-size:21px;">What changed</h3>
+        <div style="font-size:13px;color:var(--color-neutral-700);">Since last visit · before vs after the Apr 21 treatment change</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <sc-for list="{{ changed }}" as="x" hint-placeholder-count="5">
+          <div onClick="{{ x.open }}" style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:18px;cursor:pointer;" style-hover="background:var(--color-neutral-100);">
+            <div style="width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;background:{{ x.iconBg }};color:{{ x.iconFg }};font-weight:700;font-size:15px;">{{ x.arrow }}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:14px;">{{ x.title }}</div>
+              <div style="font-size:13px;color:var(--color-neutral-700);">{{ x.detail }}</div>
+            </div>
+            <span class="tag {{ x.tagCls }}">{{ x.tag }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </article>
+    </sc-if>
+
+    <!-- Lung function -->
+    <sc-if value="{{ on.lung }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.lung }};grid-column:span {{ sp.lung }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0;">
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <h3 style="margin:0;font-size:21px;">Lung function (FEV1)</h3>
+          <div style="font-size:13px;color:var(--color-neutral-700);">Home spirometer · best blow per day · quality from device ATS/ERS check</div>
+        </div>
+        <button onClick="{{ toggleQ }}" class="btn btn-secondary" style="font-size:13px;">{{ qLabel }}</button>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--color-neutral-700);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-accent-2-700);"></span>Reliable · {{ S.reliableN }}</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;border:2px solid var(--color-accent-600);background:var(--color-neutral-100);"></span>Questionable · {{ S.flagged }}, not in trend</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:16px;border-top:2px dashed var(--color-accent-2-600);"></span>80% predicted</span>
+      </div>
+      <div style="position:relative;height:230px;margin:6px 0 0 40px;">
+        <sc-for list="{{ lung.grid }}" as="g" hint-placeholder-count="3">
+          <div style="position:absolute;left:0;right:0;top:{{ g.top }};border-top:1px solid var(--color-divider);"><span style="position:absolute;left:-40px;top:-9px;font-size:11px;color:var(--color-neutral-600);">{{ g.label }}</span></div>
+        </sc-for>
+        <div style="position:absolute;left:0;right:0;top:{{ lung.predTop }};border-top:2px dashed var(--color-accent-2-600);"></div>
+        <div style="position:absolute;top:-6px;bottom:0;left:{{ lung.switchLeft }};border-left:2px dashed var(--color-accent-600);"><span style="position:absolute;left:6px;top:-2px;font-size:11px;color:var(--color-accent-700);font-weight:600;white-space:nowrap;">Switched controller · Apr 21</span></div>
+        <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;"><path d="{{ lung.path }}" fill="none" stroke="var(--color-accent-2-600)" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path></svg>
+        <sc-for list="{{ lung.pts }}" as="p" hint-placeholder-count="12">
+          <div onClick="{{ p.open }}" title="{{ p.title }}" style="position:absolute;left:{{ p.left }};top:{{ p.top }};width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:{{ p.bg }};border:{{ p.bd }};cursor:pointer;box-sizing:border-box;" style-hover="transform:scale(1.4);"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-left:40px;font-size:11px;color:var(--color-neutral-600);"><span>Apr 8</span><span>Apr 15</span><span>Apr 22</span><span>Apr 29</span><span>May 5</span></div>
+    </article>
+    </sc-if>
+
+    <!-- Treatment comparison -->
+    <sc-if value="{{ on.compare }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.compare }};grid-column:span {{ sp.compare }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:16px;min-width:0;">
+      <div>
+        <h3 style="margin:0;font-size:21px;">Before vs after treatment change</h3>
+        <div style="font-size:13px;color:var(--color-neutral-700);">Fluticasone 110 mcg → budesonide-formoterol 160/4.5 on Apr 21</div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:12px;color:var(--color-neutral-700);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:8px;border-radius:999px;background:var(--color-neutral-400);"></span>Apr 8–20 (13 days)</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:8px;border-radius:999px;background:var(--color-accent-2-600);"></span>Apr 21–May 5 (15 days)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <sc-for list="{{ compare }}" as="m" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr);gap:12px;align-items:center;">
+            <div><div style="font-size:13px;font-weight:600;">{{ m.label }}</div><div style="font-size:11px;color:var(--color-neutral-600);">{{ m.note }}</div></div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;align-items:center;gap:8px;"><div style="height:12px;border-radius:999px;background:var(--color-neutral-400);width:{{ m.bw }};"></div><span style="font-size:12px;">{{ m.b }}</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><div style="height:12px;border-radius:999px;background:var(--color-accent-2-600);width:{{ m.aw }};"></div><span style="font-size:12px;font-weight:600;">{{ m.a }}</span></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;color:var(--color-neutral-700);background:var(--color-neutral-100);border-radius:16px;padding:10px 14px;">Association only — reported adherence rose over the same period, so improvement can’t be attributed to the new medication alone.</div>
+    </article>
+    </sc-if>
+
+    <!-- Review points -->
+    <sc-if value="{{ on.review }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.review }};grid-column:span {{ sp.review }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:12px;min-width:0;">
+      <div>
+        <h3 style="margin:0;font-size:21px;">Review points</h3>
+        <div style="font-size:13px;color:var(--color-neutral-700);">Concerning or conflicting findings — open the exact records behind each</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <sc-for list="{{ review }}" as="r" hint-placeholder-count="5">
+          <div onClick="{{ r.open }}" style="display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-radius:18px;cursor:pointer;" style-hover="background:var(--color-neutral-100);">
+            <span class="tag {{ r.tagCls }}" style="justify-self:start;">{{ r.sev }}</span>
+            <div style="min-width:0;">
+              <div style="font-weight:600;font-size:14px;">{{ r.title }}</div>
+              <div style="font-size:13px;color:var(--color-neutral-700);">{{ r.date }} · {{ r.detail }}</div>
+            </div>
+            <span style="font-size:13px;color:var(--color-accent-700);font-weight:600;white-space:nowrap;">Records →</span>
+          </div>
+        </sc-for>
+      </div>
+    </article>
+    </sc-if>
+
+    <!-- Synchronized timeline -->
+    <sc-if value="{{ on.timeline }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.timeline }};grid-column:span {{ sp.timeline }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0;">
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <h3 style="margin:0;font-size:21px;">Synchronized timeline</h3>
+          <div style="font-size:13px;color:var(--color-neutral-700);">Symptoms, medication and lung readings aligned by date · click a day for every submission</div>
+        </div>
+        <button class="btn btn-ghost" onClick="{{ goTimeline }}">Full timeline &amp; records →</button>
+      </div>
+      <div style="position:relative;display:flex;flex-direction:column;gap:8px;">
+        <div style="position:absolute;top:0;bottom:18px;left:calc(110px + (100% - 110px) * 0.4643);border-left:2px dashed var(--color-accent-600);pointer-events:none;z-index:1;"></div>
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr);align-items:center;">
+          <div style="font-size:12px;font-weight:600;">Zone</div>
+          <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:3px;">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" style="height:14px;border-radius:999px;background:{{ c.zoneBg }};border:{{ c.zoneBd }};cursor:pointer;"></div></sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr);align-items:center;">
+          <div style="font-size:12px;font-weight:600;">Symptoms</div>
+          <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:3px;height:28px;">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" title="{{ c.title }}" style="display:grid;place-items:center;cursor:pointer;border-radius:8px;" style-hover="background:var(--color-neutral-100);"><div style="width:{{ c.symSize }};height:{{ c.symSize }};border-radius:50%;background:{{ c.symBg }};border:{{ c.symBd }};box-sizing:border-box;"></div></div></sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr);align-items:end;">
+          <div style="font-size:12px;font-weight:600;align-self:center;">Rescue uses</div>
+          <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:3px;height:24px;align-items:end;">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" style="height:{{ c.rescueH }};background:var(--color-accent-700);border-radius:4px;margin:0 22%;cursor:pointer;"></div></sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr);align-items:center;">
+          <div style="font-size:12px;font-weight:600;">Controller<div style="font-weight:400;font-size:11px;color:var(--color-neutral-600);">AM / PM</div></div>
+          <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:3px;">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" style="display:flex;flex-direction:column;gap:3px;align-items:center;cursor:pointer;"><div style="width:12px;height:12px;border-radius:4px;background:{{ c.amBg }};border:{{ c.amBd }};box-sizing:border-box;"></div><div style="width:12px;height:12px;border-radius:4px;background:{{ c.pmBg }};border:{{ c.pmBd }};box-sizing:border-box;"></div></div></sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr);align-items:center;">
+          <div style="font-size:12px;font-weight:600;">FEV1</div>
+          <div style="position:relative;height:56px;">
+            <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;"><path d="{{ lung.path }}" fill="none" stroke="var(--color-accent-2-600)" stroke-width="2" vector-effect="non-scaling-stroke"></path></svg>
+            <sc-for list="{{ lung.allPts }}" as="p" hint-placeholder-count="12"><div onClick="{{ p.open }}" title="{{ p.title }}" style="position:absolute;left:{{ p.left }};top:{{ p.top }};width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:{{ p.bg }};border:{{ p.bd }};box-sizing:border-box;cursor:pointer;"></div></sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr);">
+          <div></div>
+          <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:3px;">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div style="text-align:center;font-size:10px;color:{{ c.numFg }};font-weight:{{ c.numW }};">{{ c.num }}</div></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--color-neutral-700);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--color-accent-2-600);"></span>Taken</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--color-accent-500);"></span>Skipped</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;border:1.5px dashed var(--color-neutral-500);"></span>Unreported</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-accent-500);box-shadow:0 0 0 2px var(--color-text);"></span>Conflicting answers</span>
+        <span>Symptom dot size = number of symptoms</span>
+      </div>
+    </article>
+    </sc-if>
+
+    <!-- Medication calendar -->
+    <sc-if value="{{ on.meds }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.meds }};grid-column:span {{ sp.meds }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0;">
+      <div>
+        <h3 style="margin:0;font-size:21px;">Medication reporting</h3>
+        <div style="font-size:13px;color:var(--color-neutral-700);">Controller, twice daily · left half AM, right half PM · self-reported</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;">
+        <sc-for list="{{ dowHead }}" as="h" hint-placeholder-count="7"><div style="font-size:11px;text-align:center;color:var(--color-neutral-600);font-weight:600;">{{ h }}</div></sc-for>
+        <sc-for list="{{ medCal }}" as="m" hint-placeholder-count="30">
+          <div onClick="{{ m.open }}" style="opacity:{{ m.op }};cursor:pointer;border-radius:14px;padding:5px;display:flex;flex-direction:column;gap:4px;align-items:center;background:{{ m.selBg }};" style-hover="background:var(--color-neutral-100);">
+            <div style="font-size:11px;color:var(--color-neutral-700);">{{ m.num }}</div>
+            <div style="display:flex;gap:2px;width:100%;max-width:38px;">
+              <div style="flex:1;height:16px;border-radius:999px 3px 3px 999px;background:{{ m.amBg }};border:{{ m.amBd }};box-sizing:border-box;"></div>
+              <div style="flex:1;height:16px;border-radius:3px 999px 999px 3px;background:{{ m.pmBg }};border:{{ m.pmBd }};box-sizing:border-box;"></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--color-neutral-700);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--color-accent-2-600);"></span>Taken {{ S.dAll.t }}</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--color-accent-500);"></span>Skipped {{ S.dAll.s }}</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;border:1.5px dashed var(--color-neutral-500);"></span>Unreported {{ S.dAll.u }}</span>
+        <span style="margin-left:auto;font-weight:600;color:var(--color-text);">{{ S.dB.pct }}% → {{ S.dA.pct }}% after switch</span>
+      </div>
+    </article>
+    </sc-if>
+
+    <!-- Action plan -->
+    <sc-if value="{{ on.plan }}" hint-placeholder-val="{{ true }}">
+    <article style="order:{{ ord.plan }};grid-column:span {{ sp.plan }};background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0;">
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <h3 style="margin:0;font-size:21px;">Action-plan history</h3>
+          <div style="font-size:13px;color:var(--color-neutral-700);">Zones the app showed the family, from symptoms + spirometry</div>
+        </div>
+        <span class="tag tag-accent" style="font-weight:600;">Expires May 30 · renew today</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:{{ S.green }};background:var(--color-accent-2-500);color:var(--color-accent-2-900);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;">Green {{ S.green }} days</div>
+        <div style="flex:5;min-width:110px;background:oklch(0.82 0.12 82);color:var(--color-neutral-900);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;">Yellow {{ S.yellow }}</div>
+        <div style="flex:3;min-width:70px;border:1.5px dashed var(--color-neutral-500);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--color-neutral-700);">Red 0</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <sc-for list="{{ planEvents }}" as="e" hint-placeholder-count="5">
+          <div onClick="{{ e.open }}" style="display:grid;grid-template-columns:62px 14px minmax(0,1fr);gap:10px;align-items:center;padding:7px 10px;border-radius:14px;cursor:{{ e.cursor }};" style-hover="background:var(--color-neutral-100);">
+            <span style="font-size:12px;font-weight:600;color:var(--color-neutral-700);">{{ e.date }}</span>
+            <span style="width:12px;height:12px;border-radius:50%;background:{{ e.dot }};"></span>
+            <span style="font-size:13px;">{{ e.text }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </article>
+    </sc-if>
+
+  </div>
+  <div style="font-size:12px;color:var(--color-neutral-700);">Showing {{ onCount }} of 8 widgets · layout “{{ presetName }}” · saved to your profile and reused for every asthma patient</div>
+</div>
+</sc-if>
+
+<!-- ================= TIMELINE / DETAIL ================= -->
+<sc-if value="{{ showTimeline }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:20px;">
+  <article style="background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+      <h3 style="margin:0;font-size:21px;">Synchronized timeline</h3>
+      <span style="font-size:13px;color:var(--color-neutral-700);">One column per day · repeated submissions combined (last complete entry) · click any column</span>
+    </div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:10px;">
+      <div style="position:absolute;top:0;bottom:0;left:calc(130px + (100% - 130px) * 0.4643);border-left:2px dashed var(--color-accent-600);pointer-events:none;z-index:1;"><span style="position:absolute;left:6px;top:-4px;font-size:11px;font-weight:600;color:var(--color-accent-700);white-space:nowrap;background:var(--color-surface);padding:0 4px;">Apr 21 · switched controller</span></div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);height:12px;"></div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;">
+        <div></div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:4px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div style="text-align:center;font-size:10px;line-height:1.2;color:{{ c.numFg }};font-weight:{{ c.numW }};">{{ c.dow1 }}<br>{{ c.num }}</div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;">
+        <div style="font-size:13px;font-weight:600;">Action-plan zone</div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:4px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" style="height:22px;border-radius:999px;background:{{ c.zoneBg }};border:{{ c.zoneBd }};cursor:pointer;"></div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;">
+        <div style="font-size:13px;font-weight:600;">How are you feeling?</div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:4px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" title="{{ c.feel }}" style="height:30px;border-radius:10px;display:grid;place-items:center;font-size:10px;font-weight:700;background:{{ c.feelBg }};color:{{ c.feelFg }};cursor:pointer;">{{ c.feel1 }}</div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;">
+        <div style="font-size:13px;font-weight:600;">Symptoms</div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:4px;height:34px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" title="{{ c.title }}" style="display:grid;place-items:center;cursor:pointer;"><div style="width:{{ c.symSize }};height:{{ c.symSize }};border-radius:50%;background:{{ c.symBg }};border:{{ c.symBd }};box-sizing:border-box;"></div></div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:end;">
+        <div style="font-size:13px;font-weight:600;align-self:center;">Rescue inhaler</div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:4px;height:26px;align-items:end;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" style="height:{{ c.rescueH }};background:var(--color-accent-700);border-radius:4px;margin:0 25%;cursor:pointer;"></div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;">
+        <div style="font-size:13px;font-weight:600;">Controller AM / PM</div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:4px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" style="display:flex;flex-direction:column;gap:3px;align-items:center;cursor:pointer;"><div style="width:14px;height:14px;border-radius:4px;background:{{ c.amBg }};border:{{ c.amBd }};box-sizing:border-box;"></div><div style="width:14px;height:14px;border-radius:4px;background:{{ c.pmBg }};border:{{ c.pmBd }};box-sizing:border-box;"></div></div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;">
+        <div style="font-size:13px;font-weight:600;">FEV1 (L)</div>
+        <div style="position:relative;height:90px;background:var(--color-neutral-100);border-radius:14px;">
+          <div style="position:absolute;left:0;right:0;top:{{ lung.predTop }};border-top:2px dashed var(--color-accent-2-500);"></div>
+          <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;"><path d="{{ lung.path }}" fill="none" stroke="var(--color-accent-2-600)" stroke-width="2.5" vector-effect="non-scaling-stroke"></path></svg>
+          <sc-for list="{{ lung.allPts }}" as="p" hint-placeholder-count="12"><div onClick="{{ p.open }}" title="{{ p.title }}" style="position:absolute;left:{{ p.left }};top:{{ p.top }};width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:{{ p.bg }};border:{{ p.bd }};box-sizing:border-box;cursor:pointer;"></div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;">
+        <div style="font-size:13px;font-weight:600;">Submissions</div>
+        <div style="display:grid;grid-template-columns:repeat(28,minmax(0,1fr));gap:4px;">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="28"><div onClick="{{ c.open }}" style="text-align:center;font-size:12px;font-weight:600;color:{{ c.entFg }};cursor:pointer;">{{ c.entries }}</div></sc-for>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article style="background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:12px;overflow-x:auto;">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+      <h3 style="margin:0;font-size:21px;">Daily records</h3>
+      <span style="font-size:13px;color:var(--color-neutral-700);">Plain-language view of the full record · click a row for submissions, doses and every spirometer blow</span>
+      <button class="btn btn-secondary" onClick="{{ downloadCsv }}" style="margin-left:auto;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+        Download CSV
+      </button>
+    </div>
+    <table class="table" style="min-width:860px;">
+      <thead><tr><th>Date</th><th>Zone</th><th>Feeling</th><th>Symptoms</th><th>Rescue</th><th>Controller AM</th><th>Controller PM</th><th>FEV1</th><th>Entries</th></tr></thead>
+      <tbody>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+          <tr onClick="{{ r.open }}" style="cursor:pointer;">
+            <td style="font-weight:600;white-space:nowrap;">{{ r.date }}</td>
+            <td><span class="tag {{ r.zoneCls }}">{{ r.zone }}</span></td>
+            <td>{{ r.feel }}</td>
+            <td style="font-size:13px;">{{ r.syms }}</td>
+            <td>{{ r.rescue }}</td>
+            <td><span class="tag {{ r.amCls }}">{{ r.am }}</span></td>
+            <td><span class="tag {{ r.pmCls }}">{{ r.pm }}</span></td>
+            <td style="white-space:nowrap;">{{ r.fev }}</td>
+            <td>{{ r.entries }}</td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </article>
+</div>
+</sc-if>
+
+<!-- ================= ASK ================= -->
+<sc-if value="{{ showAsk }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,320px);gap:20px;align-items:start;">
+  <article style="background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:16px;min-height:520px;">
+    <div>
+      <h3 style="margin:0;font-size:21px;">Ask the data</h3>
+      <div style="font-size:13px;color:var(--color-neutral-700);">Answers come only from Maya’s SMART@Home records, with links to the source days</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+      <sc-if value="{{ noMsgs }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:grid;place-items:center;text-align:center;color:var(--color-neutral-700);padding:40px 0;">
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center;max-width:360px;">
+            <div style="width:64px;height:64px;border-radius:50%;background:var(--color-accent-200);display:grid;place-items:center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-700)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"></path></svg></div>
+            <div style="font-family:var(--font-heading);font-size:20px;color:var(--color-text);">What do you want to know?</div>
+            <div style="font-size:14px;">Try a suggested question, or ask your own.</div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-for list="{{ msgs }}" as="m" hint-placeholder-count="0">
+        <div style="display:flex;justify-content:{{ m.justify }};">
+          <div style="max-width:78%;padding:12px 16px;border-radius:22px;background:{{ m.bg }};color:{{ m.fg }};font-size:14px;line-height:1.55;display:flex;flex-direction:column;gap:10px;">
+            <div style="white-space:pre-wrap;">{{ m.text }}</div>
+            <sc-if value="{{ m.hasSrc }}">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:11px;color:var(--color-neutral-700);">Sources</span>
+                <sc-for list="{{ m.sources }}" as="s"><button onClick="{{ s.open }}" class="tag tag-outline" style="cursor:pointer;background:transparent;font-family:var(--font-body);">{{ s.label }}</button></sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ asking }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:6px;padding:14px 18px;background:var(--color-neutral-100);border-radius:22px;align-self:flex-start;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--color-accent);animation:dotpulse 1s infinite;"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--color-accent);animation:dotpulse 1s .2s infinite;"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--color-accent);animation:dotpulse 1s .4s infinite;"></span>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;padding:6px 6px 6px 18px;background:var(--color-neutral-100);border-radius:999px;">
+      <input value="{{ askInput }}" onChange="{{ onAskInput }}" onKeyDown="{{ onAskKey }}" placeholder="Ask about symptoms, medication, lung function, gaps…" style="flex:1;border:0;background:transparent;font:15px var(--font-body);color:var(--color-text);outline:none;min-width:0;">
+      <button class="btn btn-primary" onClick="{{ askSend }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+        Ask
+      </button>
+    </div>
+  </article>
+  <aside style="display:flex;flex-direction:column;gap:16px;">
+    <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--color-neutral-700);">Suggested</div>
+      <sc-for list="{{ suggestions }}" as="q" hint-placeholder-count="5">
+        <button onClick="{{ q.go }}" style="text-align:left;border:1px solid var(--color-divider);background:transparent;border-radius:16px;padding:10px 14px;font:14px var(--font-body);color:var(--color-text);cursor:pointer;" style-hover="background:var(--color-neutral-100);">{{ q.text }}</button>
+      </sc-for>
+    </div>
+    <div style="background:var(--color-accent-2-100);color:var(--color-accent-2-900);border-radius:var(--radius-lg);padding:20px;font-size:13px;display:flex;flex-direction:column;gap:6px;">
+      <div style="font-weight:700;">What it searches</div>
+      <div>28 daily logs · {{ S.subsTotal }} submissions · 56 scheduled doses · {{ S.blowsTotal }} spirometer blows · action plan</div>
+      <div style="color:var(--color-accent-2-800);">Self-reported data — check sources before acting. Nothing is written to the medical record.</div>
+    </div>
+  </aside>
+</div>
+</sc-if>
+
+<!-- ================= SUMMARY ================= -->
+<sc-if value="{{ showSummary }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:minmax(0,760px) minmax(220px,300px);gap:20px;align-items:start;">
+  <article style="background:var(--color-neutral-100);border-radius:var(--radius-lg);padding:32px 36px;box-shadow:var(--shadow-md);display:flex;flex-direction:column;gap:18px;">
+    <div>
+      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--color-accent-700);">Visit summary · factual findings</div>
+      <h2 style="margin:4px 0 0;font-size:28px;">Maya Thompson, 14 y — Asthma</h2>
+      <div style="font-size:13px;color:var(--color-neutral-700);">SMART@Home home data · Apr 8 – May 5, 2026 · generated May 6, 2026</div>
+    </div>
+    <sc-for list="{{ summary }}" as="sec" hint-placeholder-count="8">
+      <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;">
+        <div style="font-weight:700;font-size:13px;">{{ sec.title }}</div>
+        <div style="font-size:14px;line-height:1.6;">{{ sec.text }}</div>
+      </div>
+    </sc-for>
+  </article>
+  <aside style="background:var(--color-surface);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:10px;">
+    <div style="font-family:var(--font-heading);font-size:18px;">Export</div>
+    <button class="btn btn-primary" onClick="{{ copySummary }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+      {{ copyLabel }}
+    </button>
+    <button class="btn btn-secondary" onClick="{{ downloadTxt }}">Download .txt</button>
+    <button class="btn btn-secondary" onClick="{{ downloadCsv }}">Daily data .csv</button>
+    <div style="font-size:12px;color:var(--color-neutral-700);">Paste into your Epic note. Every figure carries its dates and the limitations of self-reported data.</div>
+  </aside>
+</div>
+</sc-if>
+
+<!-- ================= CONSULTATION MODE ================= -->
+<sc-if value="{{ consult }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:24px;">
+  <h2 style="margin:0;font-size:48px;">Maya’s last 4 weeks</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px;">
+    <article style="background:var(--color-surface);border-radius:36px;padding:32px;display:flex;flex-direction:column;gap:18px;">
+      <div style="font-family:var(--font-heading);font-size:28px;">How your days went</div>
+      <div style="font-size:22px;"><b>{{ S.goodDays }} good days</b>, {{ S.hardDays }} harder days</div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;">
+        <sc-for list="{{ consultCal }}" as="d" hint-placeholder-count="30">
+          <div style="aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:18px;font-weight:700;background:{{ d.bg }};border:{{ d.bd }};color:{{ d.fg }};opacity:{{ d.op }};">{{ d.num }}</div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:18px;">
+        <span style="display:flex;align-items:center;gap:8px;"><span style="width:20px;height:20px;border-radius:50%;background:var(--color-accent-2-400);"></span>Good day</span>
+        <span style="display:flex;align-items:center;gap:8px;"><span style="width:20px;height:20px;border-radius:50%;background:var(--color-accent-300);"></span>Harder day</span>
+        <span style="display:flex;align-items:center;gap:8px;"><span style="width:20px;height:20px;border-radius:50%;border:2px dashed var(--color-neutral-500);"></span>Not filled in</span>
+      </div>
+    </article>
+    <article style="background:var(--color-surface);border-radius:36px;padding:32px;display:flex;flex-direction:column;gap:18px;">
+      <div style="font-family:var(--font-heading);font-size:28px;">Your daily inhaler</div>
+      <div style="font-size:22px;line-height:1.4;">You marked it taken <b>{{ S.dAll.t }} out of {{ S.dAll.n }}</b> times.</div>
+      <div style="display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:6px;">
+        <sc-for list="{{ doseDots }}" as="d" hint-placeholder-count="56"><div style="aspect-ratio:1;border-radius:50%;background:{{ d.bg }};border:{{ d.bd }};box-sizing:border-box;"></div></sc-for>
+      </div>
+      <div style="background:var(--color-accent-2-100);color:var(--color-accent-2-900);border-radius:24px;padding:16px 20px;font-size:20px;">Since the new inhaler on April 21: <b>{{ S.dA.t }} of {{ S.dA.n }}</b>. That’s better than before ({{ S.dB.t }} of {{ S.dB.n }}).</div>
+    </article>
+  </div>
+  <article style="background:var(--color-surface);border-radius:36px;padding:32px;display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:var(--font-heading);font-size:28px;">Your breathing test</div>
+    <div style="font-size:20px;color:var(--color-neutral-800);">How much air you blew out in one second. <b>Higher is better.</b> The dotted line is your goal.</div>
+    <div style="position:relative;height:300px;margin-top:24px;">
+      <div style="position:absolute;left:0;right:0;top:{{ lung.predTop }};border-top:3px dashed var(--color-accent-2-600);"><span style="position:absolute;right:0;top:-30px;font-size:18px;color:var(--color-accent-2-800);font-weight:600;">Goal</span></div>
+      <div style="position:absolute;top:-20px;bottom:0;left:{{ lung.switchLeft }};border-left:3px dashed var(--color-accent-600);"><span style="position:absolute;left:10px;top:-6px;font-size:18px;color:var(--color-accent-700);font-weight:700;white-space:nowrap;">New inhaler</span></div>
+      <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;"><path d="{{ lung.path }}" fill="none" stroke="var(--color-accent-2-600)" stroke-width="5" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"></path></svg>
+      <sc-for list="{{ lung.relPts }}" as="p" hint-placeholder-count="12"><div style="position:absolute;left:{{ p.left }};top:{{ p.top }};width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--color-accent-2-700);border:4px solid var(--color-surface);"></div></sc-for>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:18px;color:var(--color-neutral-700);"><span>April 8</span><span>April 21</span><span>May 5</span></div>
+  </article>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
+    <div style="background:var(--color-accent-100);border-radius:36px;padding:28px 32px;font-size:22px;line-height:1.4;"><div style="font-family:var(--font-heading);font-size:40px;color:var(--color-accent-700);">{{ S.school }} days</div>of school missed — both before the new inhaler</div>
+    <div style="background:var(--color-accent-2-100);border-radius:36px;padding:28px 32px;font-size:22px;line-height:1.4;"><div style="font-family:var(--font-heading);font-size:40px;color:var(--color-accent-2-700);">{{ S.rescueB }} → {{ S.rescueA }}</div>times you needed your rescue inhaler, before vs after April 21</div>
+  </div>
+</div>
+</sc-if>
+</main>
+
+<!-- ================= DAY DRAWER ================= -->
+<sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeDay }}" style="position:fixed;inset:0;background:color-mix(in srgb, var(--color-neutral-900) 35%, transparent);z-index:20;"></div>
+  <aside style="position:fixed;top:0;right:0;bottom:0;width:min(480px,100%);background:var(--color-bg);box-shadow:var(--shadow-lg);z-index:21;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;border-radius:28px 0 0 28px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-secondary btn-icon" onClick="{{ dd.prev }}" title="Previous day"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+      <button class="btn btn-secondary btn-icon" onClick="{{ dd.next }}" title="Next day"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+      <div style="flex:1;"></div>
+      <button class="btn btn-ghost btn-icon" onClick="{{ closeDay }}" title="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--color-neutral-700);">Day detail</div>
+      <h2 style="margin:0;font-size:28px;">{{ dd.title }}</h2>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+        <span class="tag {{ dd.zoneCls }}">{{ dd.zone }}</span>
+        <span class="tag tag-neutral">{{ dd.subCount }}</span>
+        <sc-if value="{{ dd.school }}"><span class="tag tag-accent">Missed school</span></sc-if>
+        <sc-if value="{{ dd.after }}"><span class="tag tag-accent-2">After controller switch</span></sc-if>
+      </div>
+    </div>
+    <sc-if value="{{ dd.note }}">
+      <div style="background:var(--color-accent-100);color:var(--color-accent-900);border-radius:18px;padding:12px 16px;font-size:13px;">{{ dd.note }}</div>
+    </sc-if>
+    <section style="display:flex;flex-direction:column;gap:8px;">
+      <h4 style="margin:0;font-size:17px;">Tracker submissions</h4>
+      <sc-if value="{{ dd.noSubs }}"><div style="font-size:14px;color:var(--color-neutral-700);">No entries this day. Doses are counted as unreported, not missed.</div></sc-if>
+      <sc-for list="{{ dd.subs }}" as="s">
+        <div style="display:flex;gap:12px;padding:10px 14px;border-radius:16px;background:{{ s.bg }};opacity:{{ s.op }};">
+          <div style="font:600 13px var(--font-body);width:66px;flex:none;">{{ s.t }}</div>
+          <div style="flex:1;font-size:13px;min-width:0;">
+            <div style="font-weight:600;">{{ s.head }}</div>
+            <div style="color:var(--color-neutral-700);">{{ s.sub }}</div>
+          </div>
+          <sc-if value="{{ s.counts }}"><span class="tag tag-accent-2" style="align-self:flex-start;">Used</span></sc-if>
+        </div>
+      </sc-for>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:8px;">
+      <h4 style="margin:0;font-size:17px;">Medication</h4>
+      <sc-for list="{{ dd.doses }}" as="x">
+        <div style="display:flex;gap:10px;align-items:center;padding:8px 14px;border-radius:16px;background:var(--color-surface);font-size:13px;">
+          <div style="flex:1;min-width:0;"><div style="font-weight:600;">{{ x.name }}</div><div style="color:var(--color-neutral-700);">{{ x.slot }}</div></div>
+          <span class="tag {{ x.cls }}">{{ x.status }}</span>
+        </div>
+      </sc-for>
+    </section>
+    <sc-if value="{{ dd.hasBlows }}">
+    <section style="display:flex;flex-direction:column;gap:8px;">
+      <h4 style="margin:0;font-size:17px;">Spirometer blows</h4>
+      <table class="table" style="font-size:13px;">
+        <thead><tr><th>#</th><th>FEV1</th><th>FVC</th><th>Ratio</th><th>Peak flow</th><th>Quality</th></tr></thead>
+        <tbody>
+          <sc-for list="{{ dd.blows }}" as="b">
+            <tr style="font-weight:{{ b.w }};"><td>{{ b.n }}</td><td>{{ b.fev }}</td><td>{{ b.fvc }}</td><td>{{ b.ratio }}</td><td>{{ b.pef }}</td><td><span class="tag {{ b.cls }}">{{ b.q }}</span><div style="font-size:11px;color:var(--color-neutral-700);font-weight:400;">{{ b.coach }}</div></td></tr>
+          </sc-for>
+        </tbody>
+      </table>
+      <div style="font-size:12px;color:var(--color-neutral-700);">Bold = best blow, used in charts. Coaching messages from the device.</div>
+    </section>
+    </sc-if>
+  </aside>
+</sc-if>
+
+<!-- ================= CUSTOMISE ================= -->
+<sc-if value="{{ customOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeCustom }}" style="position:fixed;inset:0;background:color-mix(in srgb, var(--color-neutral-900) 35%, transparent);z-index:20;"></div>
+  <aside style="position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--color-bg);box-shadow:var(--shadow-lg);z-index:21;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:18px;border-radius:28px 0 0 28px;">
+    <div style="display:flex;align-items:center;">
+      <h2 style="margin:0;font-size:26px;flex:1;">Customise dashboard</h2>
+      <button class="btn btn-ghost btn-icon" onClick="{{ closeCustom }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--color-neutral-700);">Start from a specialty preset</div>
+      <sc-for list="{{ presetCards }}" as="p" hint-placeholder-count="3">
+        <button onClick="{{ p.go }}" style="text-align:left;cursor:pointer;border-radius:20px;padding:12px 16px;background:{{ p.bg }};border:{{ p.bd }};font-family:var(--font-body);color:var(--color-text);">
+          <div style="font-weight:700;font-size:14px;">{{ p.label }}</div>
+          <div style="font-size:12px;color:var(--color-neutral-700);">{{ p.desc }}</div>
+        </button>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--color-neutral-700);">Widgets · order and size</div>
+      <sc-for list="{{ layoutRows }}" as="w" hint-placeholder-count="8">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:var(--color-surface);opacity:{{ w.op }};">
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <button onClick="{{ w.up }}" style="border:0;background:transparent;cursor:pointer;padding:0;line-height:0;color:var(--color-neutral-700);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg></button>
+            <button onClick="{{ w.down }}" style="border:0;background:transparent;cursor:pointer;padding:0;line-height:0;color:var(--color-neutral-700);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+          </div>
+          <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">{{ w.name }}</div><div style="font-size:12px;color:var(--color-neutral-700);">{{ w.desc }}</div></div>
+          <button onClick="{{ w.size }}" class="tag tag-neutral" style="border:0;cursor:pointer;font-family:var(--font-body);">{{ w.sizeLabel }}</button>
+          <button onClick="{{ w.toggle }}" title="Show / hide" style="width:42px;height:24px;border-radius:999px;border:0;cursor:pointer;background:{{ w.swBg }};position:relative;flex:none;"><span style="position:absolute;top:3px;left:{{ w.knob }};width:18px;height:18px;border-radius:50%;background:var(--color-neutral-100);box-shadow:var(--shadow-sm);"></span></button>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:12px;color:var(--color-neutral-700);">Saved to your profile. The same widgets work for other trackers — measures adapt to the condition.</div>
+  </aside>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultPreset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pulm&quot;,&quot;primary&quot;,&quot;nurse&quot;],&quot;default&quot;:&quot;pulm&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startInConsultation&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showAskBar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const N = 28, PRED = 2.95, SWITCH = 13;
+const MON = ['Jan','Feb','Mar','Apr','May','Jun'], DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONL = ['January','February','March','April','May','June'];
+const SYM = [2,1,2,0,3,2,null,1,2,2,null,3,2,1,1,0,0,null,1,0,2,1,2,0,0,null,0,0];
+const RESCUE = [1,0,2,0,2,1,null,0,1,1,null,2,1,0,1,0,0,null,0,0,1,0,2,0,0,null,0,0];
+const AM = 'tttsttuttsuttt' + 'ttttutttstttut';
+const PM = 'tststsutssuttt' + 'ttttutstttttut';
+const FEV = {0:[2.31,1],2:[2.18,1],4:[1.96,1],5:[2.05,1],8:[2.12,1],9:[1.71,0,'Slow start to the blow'],11:[2.02,1],13:[2.20,1],15:[2.38,1],16:[1.48,0,'Stopped before fully empty'],18:[2.46,1],20:[2.29,1],21:[2.34,1],22:[2.16,1],23:[2.52,1],24:[2.07,0,'Cough during the blow'],26:[2.55,1],27:[2.58,1]};
+const YZ = [4,11,22], SCHOOL = [4,11], EXTRA = {3:2,14:2,26:3,20:6};
+const SYMN = ['Coughing','Wheezing','Tight chest','Short of breath'];
+const FEELS = ['Great','Good','Okay','Bad'];
+const YEL = 'oklch(0.82 0.12 82)';
+const CTRL_B = 'Fluticasone 110 mcg · 2 puffs', CTRL_A = 'Budesonide-formoterol 160/4.5 · 2 puffs';
+const fmtT = (h, m) => (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h >= 12 ? ' PM' : ' AM');
+
+const DAYS = Array.from({ length: N }, (_, i) => {
+  const dt = new Date(2026, 3, 8 + i), sym = SYM[i], logged = sym !== null, f = FEV[i];
+  return { i, dt, short: MON[dt.getMonth()] + ' ' + dt.getDate(), long: DOW[dt.getDay()] + ', ' + MONL[dt.getMonth()] + ' ' + dt.getDate(),
+    dow: DOW[dt.getDay()], num: dt.getDate(), logged, sym,
+    syms: i === 20 ? ['Wheezing','Short of breath'] : logged ? Array.from({ length: sym }, (_, k) => SYMN[(i + k) % 4]) : [],
+    rescue: RESCUE[i], am: AM[i], pm: PM[i], feel: !logged ? null : i === 20 ? 'Great' : FEELS[sym],
+    fev: f ? f[0] : null, fevOk: f ? !!f[1] : null, fevWhy: f ? f[2] || '' : '',
+    zone: !logged ? null : YZ.includes(i) ? 'y' : 'g', school: SCHOOL.includes(i),
+    entries: logged ? (EXTRA[i] || 1) : 0, after: i >= SWITCH };
+});
+
+function subs(d) {
+  if (!d.logged) return [];
+  if (d.i === 20) return [
+    { t: '1:29 PM', blank: true },
+    { t: '1:34 PM', feel: 'Bad', syms: ['Wheezing'], rescue: 0 },
+    { t: '1:41 PM', blank: true },
+    { t: '1:50 PM', feel: 'Bad', syms: ['Wheezing','Short of breath'], rescue: 1 },
+    { t: '1:54 PM', feel: 'Great', syms: ['Wheezing','Short of breath'], rescue: 0 },
+    { t: '2:25 PM', feel: 'Great', syms: ['Wheezing','Short of breath'], rescue: 0, counts: true }];
+  const out = [];
+  for (let k = 0; k < d.entries; k++) {
+    const last = k === d.entries - 1, h = last ? 19 + (d.i % 3) : 8 + k * 4, m = (d.i * 7 + k * 13 + 9) % 60;
+    if (d.i === 26 && k === 1) out.push({ t: fmtT(h, m), blank: true });
+    else out.push({ t: fmtT(h, m), feel: last ? d.feel : FEELS[Math.min(3, d.sym + 1)], syms: last ? d.syms : d.syms.slice(0, Math.max(1, d.sym)), rescue: last ? d.rescue : 0, counts: last });
+  }
+  return out;
+}
+function blows(d) {
+  if (!d.fev) return [];
+  const v = d.fev;
+  const raw = d.fevOk
+    ? [{ fev: v - 0.09, ok: true, coach: '' }, { fev: v, ok: true, coach: '', best: true }, { fev: v - 0.31, ok: false, coach: 'Blow out harder' }]
+    : [{ fev: v - 0.12, ok: false, coach: d.fevWhy }, { fev: v, ok: false, coach: 'Keep going until completely empty', best: true }];
+  return raw.map((b, k) => { const fvc = b.fev / 0.81; return { n: k + 1, fev: b.fev.toFixed(2) + ' L', fvc: fvc.toFixed(2) + ' L', ratio: Math.round(b.fev / fvc * 100) + '%', pef: Math.round(b.fev * 152) + ' L/min', q: b.ok ? 'Accepted' : 'Not accepted', cls: b.ok ? 'tag-accent-2' : 'tag-accent', coach: b.coach, w: b.best ? 700 : 400 }; });
+}
+
+const S = (() => {
+  const B = DAYS.filter(d => !d.after), A = DAYS.filter(d => d.after);
+  const logged = a => a.filter(d => d.logged).length, symD = a => a.filter(d => d.logged && d.sym > 0).length;
+  const doses = a => { let t = 0, s = 0, u = 0; a.forEach(d => [d.am, d.pm].forEach(x => x === 't' ? t++ : x === 's' ? s++ : u++)); return { t, s, u, n: a.length * 2, pct: Math.round(t / (a.length * 2) * 100) }; };
+  const rel = a => a.filter(d => d.fev && d.fevOk).map(d => d.fev);
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const resc = a => a.reduce((s, d) => s + (d.rescue || 0), 0);
+  const all = rel(DAYS), gaps = DAYS.filter(d => !d.logged);
+  const symCount = {}; DAYS.forEach(d => d.syms.forEach(s => symCount[s] = (symCount[s] || 0) + 1));
+  const top = Object.entries(symCount).sort((a, b) => b[1] - a[1]);
+  const latest = all[all.length - 1];
+  return {
+    logged: logged(DAYS), symDays: symD(DAYS), logB: logged(B), symB: symD(B), logA: logged(A), symA: symD(A),
+    topSym: top.slice(0, 2).map(x => x[0].toLowerCase()).join(' & '), topList: top.map(x => x[0] + ' (' + x[1] + ' days)').join(', '),
+    dAll: doses(DAYS), dB: doses(B), dA: doses(A),
+    latest: latest.toFixed(2), latestPct: Math.round(latest / PRED * 100), fevDelta: (latest - all[0]).toFixed(2),
+    fevB: mean(rel(B)).toFixed(2), fevA: mean(rel(A)).toFixed(2), fevBp: Math.round(mean(rel(B)) / PRED * 100), fevAp: Math.round(mean(rel(A)) / PRED * 100),
+    flagged: DAYS.filter(d => d.fev && !d.fevOk).length, reliableN: all.length,
+    flaggedDates: DAYS.filter(d => d.fev && !d.fevOk).map(d => d.short).join(', '),
+    gapCount: gaps.length, gapText: 'Apr 14, 18, 25, May 3', gapDates: gaps.map(d => d.short).join(', '),
+    blanks: DAYS.reduce((n, d) => n + subs(d).filter(s => s.blank).length, 0),
+    subsTotal: DAYS.reduce((n, d) => n + d.entries, 0), blowsTotal: DAYS.reduce((n, d) => n + blows(d).length, 0),
+    rescueAll: resc(DAYS), rescueB: resc(B), rescueA: resc(A),
+    rateB: (resc(B) / logged(B)).toFixed(1), rateA: (resc(A) / logged(A)).toFixed(1),
+    school: SCHOOL.length, yellow: YZ.length, green: logged(DAYS) - YZ.length,
+    yellowDates: YZ.map(i => DAYS[i].short).join(', '),
+    goodDays: DAYS.filter(d => d.logged && d.sym <= 1 && d.zone === 'g').length,
+    hardDays: DAYS.filter(d => d.logged && !(d.sym <= 1 && d.zone === 'g')).length,
+  };
+})();
+
+const WIDGETS = {
+  snapshot: { name: '30-second snapshot', desc: 'Symptoms, meds, lung function, gaps' },
+  changed: { name: 'What changed', desc: 'Differences since last visit' },
+  lung: { name: 'Lung function', desc: 'Quality-aware FEV1 chart' },
+  compare: { name: 'Treatment comparison', desc: 'Before vs after a documented change' },
+  review: { name: 'Review points', desc: 'Concerning or conflicting findings' },
+  timeline: { name: 'Synchronized timeline', desc: 'All measures aligned by date' },
+  meds: { name: 'Medication reporting', desc: 'Taken / skipped / unreported calendar' },
+  plan: { name: 'Action-plan history', desc: 'Zones and plan expiration' },
+};
+const WIDE = { snapshot: true, timeline: true };
+const PRESETS = {
+  pulm: { label: 'Pulmonology', desc: 'Lung function and treatment response first', order: ['snapshot','changed','lung','compare','review','timeline','meds','plan'], off: [] },
+  primary: { label: 'Primary care', desc: 'Control, adherence and plan renewal', order: ['snapshot','changed','meds','plan','review','timeline','lung','compare'], off: ['lung','compare'] },
+  nurse: { label: 'Nurse / NP', desc: 'Pre-visit prep: adherence, gaps, follow-ups', order: ['snapshot','meds','review','plan','changed','timeline','lung','compare'], off: ['lung','compare'] },
+};
+const layoutFor = p => PRESETS[p].order.map(id => ({ id, on: !PRESETS[p].off.includes(id), wide: !!WIDE[id] }));
+const DOSE = { t: ['Taken', 'tag-accent-2'], s: ['Skipped', 'tag-accent'], u: ['Unreported', 'tag-neutral'] };
+const doseStyle = x => x === 't' ? ['var(--color-accent-2-600)', '0'] : x === 's' ? ['var(--color-accent-500)', '0'] : ['transparent', '1.5px dashed var(--color-neutral-500)'];
+const yPct = v => (2.9 - v) / 1.6 * 100, xPct = i => (i + 0.5) / N * 100;
+
+function canned(q) {
+  const l = q.toLowerCase();
+  if (/school/.test(l)) return { text: `2 school days missed: Apr 12 and Apr 19. Both were yellow-zone days with 3 symptoms and 2 rescue-inhaler uses reported. No school days missed since the controller switch on Apr 21.`, src: [4, 11] };
+  if (/conflict|concern|flag|odd|worr|review|wrong/.test(l)) return { text: `Three things need a look:\n• Apr 28 — 6 submissions in 56 minutes. Feeling changed from “Bad” (1:50 PM) to “Great” (1:54 PM) while wheezing and shortness of breath were still reported. The overview uses the 2:25 PM entry.\n• Apr 24 — FEV1 1.48 L failed the device quality check (stopped before fully empty); it is excluded from trends.\n• Apr 30 — yellow zone with 2 rescue uses, the day after a skipped morning controller dose (Apr 29).`, src: [20, 16, 21, 22] };
+  if (/medic|controller|inhaler|taking|adher|dose/.test(l)) return { text: `Maya marked ${S.dAll.t} of ${S.dAll.n} scheduled controller doses as taken (${S.dAll.pct}%).\n• Before the Apr 21 switch: ${S.dB.t} of ${S.dB.n} (${S.dB.pct}%), with ${S.dB.s} doses explicitly skipped — mostly evenings.\n• After: ${S.dA.t} of ${S.dA.n} (${S.dA.pct}%).\n${S.dAll.u} doses are unreported because no entry was made that day (${S.gapDates}). These are self-reports, not verified doses.`, src: [1, 3, 5, 8, 9, 19, 21] };
+  if (/lung|fev|spiro|breath|switch|treat|better|work/.test(l)) return { text: `Reliable FEV1 averaged ${S.fevB} L before the Apr 21 switch and ${S.fevA} L after (${S.fevBp}% → ${S.fevAp}% predicted). Latest reliable reading: ${S.latest} L on May 5.\n${S.flagged} readings failed the device quality check (${S.flaggedDates}) and are excluded. Reported adherence also rose in the same period, so the change can’t be attributed to the new medication alone.`, src: [13, 27, 9, 16, 24] };
+  if (/symptom|often|how many|days/.test(l)) return { text: `Symptoms were reported on ${S.symDays} of ${S.logged} logged days. Before Apr 21: ${S.symB} of ${S.logB}; after: ${S.symA} of ${S.logA}. Most reported: ${S.topList}. Rescue inhaler: ${S.rescueB} uses before, ${S.rescueA} after.`, src: [4, 11, 20, 22] };
+  return null;
+}
+function srcFromText(t) {
+  const out = []; const re = /(Apr|May) (\d{1,2})/g; let m;
+  while ((m = re.exec(t))) { const d = DAYS.find(x => x.short === m[1] + ' ' + m[2]); if (d && !out.includes(d.i)) out.push(d.i); }
+  return out.slice(0, 8);
+}
+function summarySections() {
+  return [
+    { title: 'Reporting', text: `Entries on ${S.logged} of 28 days. No entries ${S.gapDates}. ${S.blanks} blank submissions. Where a day has several submissions, the last complete one is used.` },
+    { title: 'Symptoms', text: `Reported on ${S.symDays} of ${S.logged} logged days (Apr 8–20: ${S.symB}/${S.logB}; Apr 21–May 5: ${S.symA}/${S.logA}). Most reported: ${S.topList}.` },
+    { title: 'Rescue inhaler', text: `${S.rescueAll} reported uses (${S.rescueB} before Apr 21, ${S.rescueA} after).` },
+    { title: 'Controller', text: `${S.dAll.t} of ${S.dAll.n} scheduled doses marked taken (${S.dAll.pct}%); ${S.dAll.s} explicitly skipped; ${S.dAll.u} unreported. ${S.dB.pct}% before the switch, ${S.dA.pct}% after.` },
+    { title: 'Lung function', text: `Latest reliable FEV1 ${S.latest} L (${S.latestPct}% predicted) on May 5. Mean reliable FEV1 ${S.fevB} L before Apr 21, ${S.fevA} L after. ${S.flagged} readings failed device quality checks and were excluded (${S.flaggedDates}).` },
+    { title: 'Action plan', text: `Green ${S.green} days, yellow ${S.yellow} (${S.yellowDates}), red 0. Plan expires May 30, 2026.` },
+    { title: 'School', text: `${S.school} days missed (Apr 12, Apr 19).` },
+    { title: 'Treatment change', text: `Controller changed from fluticasone 110 mcg to budesonide-formoterol 160/4.5 on Apr 21, 2026.` },
+    { title: 'Limitations', text: `Medication doses are self-reported, not verified. Apr 28 has 6 submissions with conflicting answers. Home data are not part of the medical record.` },
+  ];
+}
+function download(name, text, type) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+}
+
+class Component extends DCLogic {
+  state = { view: 'overview', consult: !!this.props.startInConsultation, preset: this.props.defaultPreset || 'pulm', layout: layoutFor(this.props.defaultPreset || 'pulm'), customOpen: false, day: null, showQ: true, msgs: [], askInput: '', asking: false, copied: false };
+
+  openDay = i => this.setState({ day: Math.max(0, Math.min(N - 1, i)) });
+  setView = v => this.setState({ view: v, consult: false });
+  editLayout = fn => this.setState(s => ({ layout: fn(s.layout.map(w => ({ ...w }))), preset: 'custom' }));
+
+  ask(q) {
+    q = (q || '').trim(); if (!q || this.state.asking) return;
+    this.setState(s => ({ msgs: [...s.msgs, { role: 'user', text: q }], askInput: '', asking: true, view: 'ask', consult: false }));
+    const push = (text, src) => this.setState(s => ({ msgs: [...s.msgs, { role: 'ai', text, src }], asking: false }));
+    const c = canned(q);
+    if (c) { setTimeout(() => push(c.text, c.src), 650); return; }
+    const ctx = DAYS.map(d => d.short + ': ' + (d.logged ? `zone ${d.zone === 'y' ? 'yellow' : 'green'}; feeling ${d.feel}; symptoms [${d.syms.join(', ')}]; rescue ${d.rescue}; controller AM ${DOSE[d.am][0]}, PM ${DOSE[d.pm][0]}; FEV1 ${d.fev ? d.fev + ' L ' + (d.fevOk ? 'reliable' : 'questionable') : 'none'}; missed school ${d.school ? 'yes' : 'no'}; submissions ${d.entries}` : 'no entries')).join('\n');
+    const prompt = `You are a clinical data assistant inside SMART@Home, a pediatric asthma home-monitoring app. Patient: 14-year-old (demo data). Controller switched from fluticasone 110 mcg to budesonide-formoterol 160/4.5 on Apr 21, 2026. Predicted FEV1 2.95 L. Action plan expires May 30, 2026. Medication doses are self-reported.\nDaily data:\n${ctx}\n\nAnswer the clinician's question factually in under 90 words, plain text, no markdown headings. Cite specific dates in the form "Apr 28". If the data cannot answer it, say so.\nQuestion: ${q}`;
+    const p = window.claude && window.claude.complete ? window.claude.complete(prompt) : Promise.reject();
+    p.then(t => push(String(t).trim(), srcFromText(String(t))))
+     .catch(() => push('I can answer questions about symptoms, controller use, lung function, school days and conflicting entries. Try one of the suggested questions.', []));
+  }
+
+  renderVals() {
+    const st = this.state, sel = st.day;
+    const L = st.layout, ord = {}, on = {}, sp = {};
+    L.forEach((w, k) => { ord[w.id] = k; on[w.id] = w.on; sp[w.id] = w.wide ? 12 : 6; });
+
+    const cells = DAYS.map(d => {
+      const [ab, abd] = doseStyle(d.am), [pb, pbd] = doseStyle(d.pm);
+      const fb = { Great: ['var(--color-accent-2-300)', 'var(--color-accent-2-900)'], Good: ['var(--color-accent-2-200)', 'var(--color-accent-2-800)'], Okay: ['var(--color-accent-200)', 'var(--color-accent-800)'], Bad: ['var(--color-accent-400)', 'var(--color-accent-900)'] }[d.feel] || ['transparent', 'var(--color-neutral-500)'];
+      return {
+        open: () => this.openDay(d.i), num: d.num, dow1: d.dow[0],
+        title: d.short + (d.logged ? ' · ' + (d.syms.join(', ') || 'no symptoms') : ' · no entry'),
+        zoneBg: d.zone === 'y' ? YEL : d.zone === 'g' ? 'var(--color-accent-2-500)' : 'transparent',
+        zoneBd: d.zone ? (sel === d.i ? '2px solid var(--color-text)' : '0') : '1.5px dashed var(--color-neutral-500)',
+        symSize: !d.logged ? '8px' : d.sym === 0 ? '6px' : (6 + d.sym * 5) + 'px',
+        symBg: !d.logged ? 'transparent' : d.sym === 0 ? 'var(--color-neutral-400)' : 'var(--color-accent-500)',
+        symBd: !d.logged ? '1.5px dashed var(--color-neutral-500)' : d.i === 20 ? '2.5px solid var(--color-text)' : '0',
+        rescueH: (d.rescue || 0) * 10 + 'px',
+        amBg: ab, amBd: abd, pmBg: pb, pmBd: pbd,
+        numFg: sel === d.i ? 'var(--color-accent-700)' : 'var(--color-neutral-600)', numW: sel === d.i ? 700 : 400,
+        feel: d.feel || 'No entry', feel1: d.feel ? d.feel[0] : '–', feelBg: fb[0], feelFg: fb[1],
+        entries: d.entries || '–', entFg: d.entries > 2 ? 'var(--color-accent-700)' : 'var(--color-neutral-700)',
+      };
+    });
+
+    const relD = DAYS.filter(d => d.fev && d.fevOk);
+    const fevDays = DAYS.filter(d => d.fev);
+    const mkPt = d => ({ open: () => this.openDay(d.i), left: xPct(d.i) + '%', top: yPct(d.fev) + '%', title: `${d.short} · FEV1 ${d.fev} L${d.fevOk ? '' : ' · questionable: ' + d.fevWhy}`,
+      bg: d.fevOk ? 'var(--color-accent-2-700)' : 'var(--color-neutral-100)', bd: d.fevOk ? '2px solid var(--color-surface)' : '2.5px solid var(--color-accent-600)' });
+    const allPts = fevDays.map(mkPt);
+    const lung = {
+      grid: [1.5, 2.0, 2.5].map(v => ({ top: yPct(v) + '%', label: v.toFixed(1) + ' L' })),
+      predTop: yPct(PRED * 0.8) + '%', switchLeft: xPct(SWITCH) + '%',
+      path: relD.map((d, k) => (k ? 'L' : 'M') + (xPct(d.i) * 10).toFixed(1) + ' ' + yPct(d.fev).toFixed(1)).join(' '),
+      allPts, pts: st.showQ ? allPts : relD.map(mkPt), relPts: relD.map(mkPt),
+    };
+
+    const changed = [
+      { arrow: '↓', title: 'Fewer symptom days', detail: `${S.symB} of ${S.logB} logged days before Apr 21 → ${S.symA} of ${S.logA} after`, tag: 'Better', good: true, i: 13 },
+      { arrow: '↑', title: 'More controller doses reported', detail: `${S.dB.pct}% → ${S.dA.pct}% marked taken`, tag: 'Better', good: true, i: 19 },
+      { arrow: '↑', title: 'FEV1 trending up', detail: `Reliable mean ${S.fevB} → ${S.fevA} L (${S.fevBp}% → ${S.fevAp}% predicted)`, tag: 'Better', good: true, i: 27 },
+      { arrow: '↓', title: 'Less rescue inhaler use', detail: `${S.rateB} → ${S.rateA} uses per logged day`, tag: 'Better', good: true, i: 22 },
+      { arrow: '!', title: 'Reporting gaps continue', detail: `${S.gapCount} days without entries, 2 after the switch`, tag: 'Watch', good: false, i: 25 },
+    ].map(x => ({ ...x, open: () => this.openDay(x.i), iconBg: x.good ? 'var(--color-accent-2-200)' : 'var(--color-accent-200)', iconFg: x.good ? 'var(--color-accent-2-800)' : 'var(--color-accent-800)', tagCls: x.good ? 'tag-accent-2' : 'tag-accent' }));
+
+    const review = [
+      { i: 20, sev: 'Conflict', cls: 'tag-accent', title: '“Great” reported with wheeze and shortness of breath', detail: '6 submissions in 56 min; Bad → Great in 4 min' },
+      { i: 16, sev: 'Data quality', cls: 'tag-neutral', title: 'FEV1 1.48 L failed the device quality check', detail: 'Stopped before fully empty — excluded from trend' },
+      { i: 22, sev: 'Watch', cls: 'tag-accent', title: 'Yellow zone the day after a skipped dose', detail: 'AM controller skipped Apr 29; 2 rescue uses' },
+      { i: 1, sev: 'Pattern', cls: 'tag-accent-2', title: '5 evening doses skipped before the switch', detail: 'Apr 9, 11, 13, 16, 17 — explicitly marked skipped' },
+      { i: 6, sev: 'Gap', cls: 'tag-neutral', title: `${S.gapCount} days with no entries`, detail: S.gapDates + ' — doses unreported, not missed' },
+    ].map(r => ({ ...r, tagCls: r.cls, date: DAYS[r.i].short, open: () => this.openDay(r.i) }));
+
+    const compare = [
+      { label: 'Symptom days', note: '% of logged days', b: Math.round(S.symB / S.logB * 100), a: Math.round(S.symA / S.logA * 100), u: '%', max: 100 },
+      { label: 'Rescue inhaler', note: 'uses per logged day', b: +S.rateB, a: +S.rateA, u: '', max: 1.2 },
+      { label: 'Controller taken', note: '% of scheduled doses', b: S.dB.pct, a: S.dA.pct, u: '%', max: 100 },
+      { label: 'FEV1, reliable', note: 'mean, litres', b: +S.fevB, a: +S.fevA, u: ' L', max: 2.95 },
+    ].map(x => ({ label: x.label, note: x.note, b: x.b + x.u, a: x.a + x.u, bw: Math.max(3, x.b / x.max * 80) + '%', aw: Math.max(3, x.a / x.max * 80) + '%' }));
+
+    const medCal = [{ blank: true }, { blank: true }, ...DAYS].map(d => {
+      if (d.blank) return { op: 0, num: '', amBg: 'transparent', pmBg: 'transparent', amBd: '0', pmBd: '0', selBg: 'transparent', open: () => {} };
+      const [ab, abd] = doseStyle(d.am), [pb, pbd] = doseStyle(d.pm);
+      return { op: 1, num: d.short.startsWith('May') && d.num === 1 ? 'May 1' : d.num, amBg: ab, amBd: abd, pmBg: pb, pmBd: pbd, selBg: sel === d.i ? 'var(--color-neutral-100)' : 'transparent', open: () => this.openDay(d.i) };
+    });
+
+    const planEvents = [
+      { date: 'Jan 12', dot: 'var(--color-neutral-400)', text: 'Plan created · fluticasone controller', i: null },
+      { date: 'Apr 12', dot: YEL, text: 'Yellow · 3 symptoms, missed school', i: 4 },
+      { date: 'Apr 19', dot: YEL, text: 'Yellow · 3 symptoms, missed school', i: 11 },
+      { date: 'Apr 21', dot: 'var(--color-accent-600)', text: 'Plan updated · budesonide-formoterol', i: 13 },
+      { date: 'Apr 30', dot: YEL, text: 'Yellow · 2 rescue uses, FEV1 73% predicted', i: 22 },
+      { date: 'May 30', dot: 'var(--color-accent-700)', text: 'Plan expires — renew at this visit', i: null },
+    ].map(e => ({ ...e, cursor: e.i === null ? 'default' : 'pointer', open: () => e.i !== null && this.openDay(e.i) }));
+
+    const rows = DAYS.slice().reverse().map(d => ({
+      open: () => this.openDay(d.i), date: d.dow + ' ' + d.short,
+      zone: d.zone === 'y' ? 'Yellow' : d.zone === 'g' ? 'Green' : 'No entry', zoneCls: d.zone === 'y' ? 'tag-accent' : d.zone === 'g' ? 'tag-accent-2' : 'tag-outline',
+      feel: d.feel || '—', syms: d.logged ? (d.syms.join(', ') || 'None') : '—', rescue: d.logged ? d.rescue : '—',
+      am: DOSE[d.am][0], amCls: DOSE[d.am][1], pm: DOSE[d.pm][0], pmCls: DOSE[d.pm][1],
+      fev: d.fev ? d.fev.toFixed(2) + ' L' + (d.fevOk ? '' : ' · flagged') : '—', entries: d.entries,
+    }));
+
+    let dd = {}; const drawerOpen = sel !== null;
+    if (drawerOpen) {
+      const d = DAYS[sel], ss = subs(d);
+      dd = {
+        title: d.long, prev: () => this.openDay(sel - 1), next: () => this.openDay(sel + 1),
+        zone: d.zone === 'y' ? 'Yellow zone' : d.zone === 'g' ? 'Green zone' : 'No zone — no entry', zoneCls: d.zone === 'y' ? 'tag-accent' : d.zone === 'g' ? 'tag-accent-2' : 'tag-outline',
+        subCount: ss.length + (ss.length === 1 ? ' submission' : ' submissions'), school: d.school, after: d.after,
+        note: d.i === 20 ? 'Conflicting answers: feeling changed from Bad to Great within 4 minutes while symptoms stayed the same. The overview uses the last complete entry (2:25 PM); rescue uses are summed across entries.' : d.fev && !d.fevOk ? `This day’s spirometry failed the device quality check (${d.fevWhy.toLowerCase()}). It is shown hollow in charts and excluded from trends.` : ss.length > 1 ? 'Several submissions this day — the overview uses the last complete one.' : '',
+        noSubs: !ss.length,
+        subs: ss.map(s => s.blank ? { t: s.t, head: 'Blank — opened, no answers', sub: 'Not used', bg: 'transparent', op: 0.6, counts: false }
+          : { t: s.t, head: 'Feeling: ' + s.feel, sub: (s.syms.length ? s.syms.join(', ') : 'No symptoms') + ' · rescue ' + s.rescue, bg: s.counts ? 'var(--color-surface)' : 'var(--color-neutral-100)', op: 1, counts: !!s.counts }),
+        doses: [
+          { name: d.after ? CTRL_A : CTRL_B, slot: 'Morning' + (d.am === 't' ? ' · marked ' + fmtT(7, (d.i * 11) % 60) : ''), status: DOSE[d.am][0], cls: DOSE[d.am][1] },
+          { name: d.after ? CTRL_A : CTRL_B, slot: 'Evening' + (d.pm === 't' ? ' · marked ' + fmtT(20, (d.i * 17) % 60) : ''), status: DOSE[d.pm][0], cls: DOSE[d.pm][1] },
+          { name: 'Albuterol (rescue)', slot: 'As needed', status: d.logged ? d.rescue + ' uses' : 'Unreported', cls: d.rescue ? 'tag-accent' : 'tag-neutral' },
+        ],
+        hasBlows: !!d.fev, blows: blows(d),
+      };
+    }
+
+    const consultCal = [{ blank: true }, { blank: true }, ...DAYS].map(d => d.blank ? { op: 0, num: '', bg: 'transparent', bd: '0', fg: 'inherit' }
+      : !d.logged ? { op: 1, num: d.num, bg: 'transparent', bd: '2px dashed var(--color-neutral-500)', fg: 'var(--color-neutral-600)' }
+      : (d.sym <= 1 && d.zone === 'g') ? { op: 1, num: d.num, bg: 'var(--color-accent-2-400)', bd: '0', fg: 'var(--color-accent-2-900)' }
+      : { op: 1, num: d.num, bg: 'var(--color-accent-300)', bd: '0', fg: 'var(--color-accent-900)' });
+    const doseDots = [];
+    DAYS.forEach(d => [d.am, d.pm].forEach(x => doseDots.push(x === 't' ? { bg: 'var(--color-accent-2-500)', bd: '0' } : x === 's' ? { bg: 'var(--color-accent-300)', bd: '0' } : { bg: 'transparent', bd: '2px dashed var(--color-neutral-400)' })));
+
+    const tabsDef = [['overview', 'Overview'], ['timeline', 'Timeline & records'], ['ask', 'Ask the data'], ['summary', 'Visit summary']];
+    const presetKeys = ['pulm', 'primary', 'nurse'];
+    const sumSecs = summarySections();
+    const sumText = 'SMART@Home visit summary — Maya Thompson (demo), 14 y, Asthma\nApr 8 – May 5, 2026 · generated May 6, 2026\n\n' + sumSecs.map(s => s.title + ': ' + s.text).join('\n');
+    const csv = () => 'date,logged,zone,feeling,symptoms,rescue_uses,controller_am,controller_pm,fev1_L,fev1_quality,missed_school,submissions\n' + DAYS.map(d => [d.dt.getFullYear() + '-' + String(d.dt.getMonth() + 1).padStart(2, '0') + '-' + String(d.num).padStart(2, '0'), d.logged, d.zone === 'y' ? 'yellow' : d.zone === 'g' ? 'green' : '', d.feel || '', '"' + d.syms.join('; ') + '"', d.logged ? d.rescue : '', DOSE[d.am][0], DOSE[d.pm][0], d.fev || '', d.fev ? (d.fevOk ? 'reliable' : 'questionable') : '', d.school, d.entries].join(',')).join('\n');
+    const last = subs(DAYS[N - 1]).slice(-1)[0];
+    const suggestions = ['Is she taking her controller medication?', 'Did lung function change after the treatment switch?', 'How often were symptoms happening?', 'How many school days were missed?', 'Which entries conflict or need review?'];
+
+    return {
+      S, cells, lung, changed, review, compare, medCal, planEvents, rows, dd, drawerOpen, consultCal, doseDots, ord, on, sp,
+      dowHead: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      lastEntry: 'Last entry May 5, ' + last.t,
+      consult: st.consult, notConsult: !st.consult,
+      showDash: !st.consult && st.view === 'overview', showTimeline: !st.consult && st.view === 'timeline', showAsk: !st.consult && st.view === 'ask', showSummary: !st.consult && st.view === 'summary',
+      showAskBar: this.props.showAskBar ?? true,
+      consultCls: st.consult ? 'btn-primary' : 'btn-secondary', consultLabel: st.consult ? 'Exit consultation mode' : 'Consultation mode',
+      toggleConsult: () => this.setState(s => ({ consult: !s.consult, day: null })),
+      tabs: tabsDef.map(([k, label]) => ({ label, go: () => this.setView(k), bg: st.view === k ? 'var(--color-text)' : 'transparent', fg: st.view === k ? 'var(--color-bg)' : 'var(--color-text)' })),
+      presetBtns: [...presetKeys, 'custom'].map(k => ({ label: k === 'custom' ? 'Custom' : PRESETS[k].label, go: () => k === 'custom' ? this.setState({ customOpen: true }) : this.setState({ preset: k, layout: layoutFor(k) }), bg: st.preset === k ? 'var(--color-accent)' : 'transparent', fg: st.preset === k ? 'var(--color-bg)' : 'var(--color-text)' })),
+      presetCards: presetKeys.map(k => ({ label: PRESETS[k].label, desc: PRESETS[k].desc, go: () => this.setState({ preset: k, layout: layoutFor(k) }), bg: st.preset === k ? 'var(--color-accent-100)' : 'var(--color-surface)', bd: st.preset === k ? '2px solid var(--color-accent)' : '2px solid transparent' })),
+      presetName: st.preset === 'custom' ? 'Custom' : PRESETS[st.preset].label,
+      onCount: L.filter(w => w.on).length,
+      layoutRows: L.map((w, k) => ({
+        name: WIDGETS[w.id].name, desc: WIDGETS[w.id].desc, op: w.on ? 1 : 0.55,
+        sizeLabel: w.wide ? 'Wide' : 'Half', swBg: w.on ? 'var(--color-accent-2-600)' : 'var(--color-neutral-400)', knob: w.on ? '21px' : '3px',
+        toggle: () => this.editLayout(l => { l[k].on = !l[k].on; return l; }),
+        size: () => this.editLayout(l => { l[k].wide = !l[k].wide; return l; }),
+        up: () => k > 0 && this.editLayout(l => { [l[k - 1], l[k]] = [l[k], l[k - 1]]; return l; }),
+        down: () => k < L.length - 1 && this.editLayout(l => { [l[k], l[k + 1]] = [l[k + 1], l[k]]; return l; }),
+      })),
+      customOpen: st.customOpen, openCustom: () => this.setState({ customOpen: true }), closeCustom: () => this.setState({ customOpen: false }),
+      closeDay: () => this.setState({ day: null }),
+      goTimeline: () => this.setView('timeline'), goMeds: () => this.openDay(21), openLatestFev: () => this.openDay(27),
+      toggleQ: () => this.setState(s => ({ showQ: !s.showQ })), qLabel: st.showQ ? 'Hide questionable' : 'Show questionable',
+      askInput: st.askInput, asking: st.asking, noMsgs: !st.msgs.length && !st.asking,
+      onAskInput: e => this.setState({ askInput: e.target.value }),
+      onAskKey: e => { if (e.key === 'Enter') this.ask(st.askInput); },
+      onAskKeyJump: e => { if (e.key === 'Enter') this.ask(st.askInput); },
+      askFromBar: () => st.askInput.trim() ? this.ask(st.askInput) : this.setView('ask'),
+      askSend: () => this.ask(st.askInput),
+      suggestions: suggestions.map(text => ({ text, go: () => this.ask(text) })),
+      msgs: st.msgs.map(m => ({ text: m.text, justify: m.role === 'user' ? 'flex-end' : 'flex-start', bg: m.role === 'user' ? 'var(--color-text)' : 'var(--color-neutral-100)', fg: m.role === 'user' ? 'var(--color-bg)' : 'var(--color-text)', hasSrc: !!(m.src && m.src.length), sources: (m.src || []).map(i => ({ label: DAYS[i].short, open: () => this.openDay(i) })) })),
+      summary: sumSecs,
+      copyLabel: st.copied ? 'Copied ✓' : 'Copy summary',
+      copySummary: () => { (navigator.clipboard ? navigator.clipboard.writeText(sumText) : Promise.reject()).catch(() => {}); this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 1800); },
+      downloadTxt: () => download('visit-summary-maya-thompson.txt', sumText, 'text/plain'),
+      downloadCsv: () => download('smart-home-daily-data.csv', csv(), 'text/csv'),
+    };
+  }
+}
+</script>
+</body>
+</html>
