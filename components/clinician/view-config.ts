@@ -2,7 +2,7 @@ import type { ClinicianModel } from "@/lib/clinician-model";
 
 export type Audience = "clinician" | "patient";
 export type PageId = "overview" | "records" | "summary";
-export type WidgetId = "snapshot" | "changed" | "lung" | "compare" | "review" | "timeline" | "meds" | "plan";
+export type WidgetId = "snapshot" | "changed" | "lung" | "compare" | "review" | "timeline" | "plan";
 export type SpecialistView = { id: string; name: string; modules: WidgetId[] };
 
 export const WIDGETS: Record<WidgetId, { name: string; desc: string }> = {
@@ -12,12 +12,11 @@ export const WIDGETS: Record<WidgetId, { name: string; desc: string }> = {
   compare: { name: "Window comparison", desc: "The two halves of this window" },
   review: { name: "Review points", desc: "Conflicts, gaps, and record notes" },
   timeline: { name: "Synchronized timeline", desc: "Measures aligned by date" },
-  meds: { name: "Medication reporting", desc: "Marked and not marked" },
   plan: { name: "Action plan", desc: "The status stored on the record" },
 };
 
 export const MODULE_IDS = Object.keys(WIDGETS) as WidgetId[];
-export const GENERAL_MODULES: WidgetId[] = ["snapshot", "changed", "lung", "compare", "review", "timeline", "meds", "plan"];
+export const GENERAL_MODULES: WidgetId[] = ["snapshot", "changed", "lung", "compare", "review", "timeline", "plan"];
 export const WIDE_MODULES = new Set<WidgetId>(["snapshot", "timeline"]);
 export const STORAGE_KEY = "smarthome-specialist-views-v1";
 

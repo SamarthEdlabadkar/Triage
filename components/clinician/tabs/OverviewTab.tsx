@@ -10,7 +10,6 @@ import { LungWidget } from "../widgets/LungWidget";
 import { CompareWidget } from "../widgets/CompareWidget";
 import { ReviewWidget } from "../widgets/ReviewWidget";
 import { TimelineWidget } from "../widgets/TimelineWidget";
-import { MedsWidget } from "../widgets/MedsWidget";
 import { PlanWidget } from "../widgets/PlanWidget";
 
 export function OverviewTab({
@@ -30,7 +29,7 @@ export function OverviewTab({
     return <PatientView model={model} chart={chart} onOpen={(index) => onOpenDay(index)} />;
   }
 
-  const visible = modules.filter((id) => moduleAvailable(id, model.patient.kind));
+  const visible = modules.filter((id) => moduleAvailable(id, model.patient.kind) && (id !== "plan" || Boolean(model.plan)));
   return (
     <ViewSkeleton
       variant="clinician"
@@ -44,7 +43,6 @@ export function OverviewTab({
           {id === "compare" ? <CompareWidget model={model} /> : null}
           {id === "review" ? <ReviewWidget model={model} onOpen={onOpenDay} /> : null}
           {id === "timeline" ? <TimelineWidget model={model} chart={chart} onOpen={onOpenDay} /> : null}
-          {id === "meds" ? <MedsWidget model={model} onOpen={onOpenDay} /> : null}
           {id === "plan" ? <PlanWidget model={model} /> : null}
         </div>
       ))}

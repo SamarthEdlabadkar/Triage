@@ -15,21 +15,21 @@ export function CustomizeViews({
 }) {
   const [editingId, setEditingId] = useState<string | null>(activeView?.id ?? null);
   const [name, setName] = useState(activeView?.name ?? "");
-  const [modules, setModules] = useState<WidgetId[]>(activeView?.modules ?? ["snapshot", "changed", "review", "timeline", "meds"]);
+  const [modules, setModules] = useState<WidgetId[]>(activeView?.modules.filter((id) => MODULE_IDS.includes(id)) ?? ["snapshot", "changed", "review", "timeline"]);
   const [error, setError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    dialog.showModal();
+    if (!dialog.open) dialog.showModal();
     return () => { if (dialog.open) dialog.close(); };
   }, []);
 
   function startNew() {
     setEditingId(null);
     setName("");
-    setModules(["snapshot", "changed", "review", "timeline", "meds"]);
+    setModules(["snapshot", "changed", "review", "timeline"]);
     setError("");
   }
 
@@ -47,7 +47,10 @@ export function CustomizeViews({
   }
 
   return (
-    <dialog ref={dialogRef} className="custom-dialog" aria-labelledby="customize-heading" onClose={onClose} onClick={(event) => {
+    <dialog ref={dialogRef} className="custom-dialog" aria-labelledby="customize-heading" onClose={(event) => {
+      // Dev effect replay can queue a close event after the dialog has reopened.
+      if (!event.currentTarget.open) onClose();
+    }} onClick={(event) => {
       if (event.target === event.currentTarget) dialogRef.current?.close();
     }}>
       <div className="custom-header">
@@ -62,7 +65,7 @@ export function CustomizeViews({
           <span className="muted">Saved views</span>
           {views.map((view) => (
             <button key={view.id} type="button" aria-pressed={editingId === view.id} onClick={() => {
-              setEditingId(view.id); setName(view.name); setModules(view.modules); setError("");
+              setEditingId(view.id); setName(view.name); setModules(view.modules.filter((id) => MODULE_IDS.includes(id))); setError("");
             }}>{view.name}</button>
           ))}
           <button type="button" onClick={startNew}>+ New view</button>
@@ -93,7 +96,6 @@ export function CustomizeViews({
         </div>
         {error ? <p className="custom-error" role="alert">{error}</p> : null}
         <div className="custom-actions">
-          <span className="muted">Saved on this browser for this demo.</span>
           <button className="btn btn-primary" type="submit">{editingId ? "Save changes" : "Create view"}</button>
         </div>
       </form>

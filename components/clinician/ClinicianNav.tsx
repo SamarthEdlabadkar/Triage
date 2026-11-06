@@ -10,8 +10,9 @@ const PAGES: Array<{ id: PageId; label: string }> = [
   { id: "summary", label: "Visit summary" },
 ];
 
-function href(file: string, trackerId?: string) {
+function href(file: string, page: PageId, trackerId?: string) {
   const params = new URLSearchParams({ patient: file });
+  if (page !== "overview") params.set("page", page);
   if (trackerId) params.set("tracker", trackerId);
   return `/?${params.toString()}`;
 }
@@ -47,7 +48,7 @@ export function ClinicianNav({
             value={model.patient.file}
             onChange={(event) => {
               const file = event.target.value;
-              if (file && file !== model.patient.file) router.push(href(file));
+              if (file && file !== model.patient.file) router.push(href(file, page));
             }}
           >
             {patients.map((patient) => <option key={patient.file} value={patient.file}>{patient.name}</option>)}
@@ -80,7 +81,7 @@ export function ClinicianNav({
               aria-pressed={active}
               onClick={() => onViewChange(id, id === "clinician" ? "general" : selectedViewId)}
               style={{ background: active ? "var(--color-accent)" : "transparent", color: active ? "var(--color-bg)" : "var(--color-text)" }}
-            >{id === "clinician" ? "Clinician view" : "Patient view"}</button>
+            >{id === "clinician" ? "Clinician" : "Patient"}</button>
           );
         })}
         {views.map((item) => {
@@ -109,7 +110,7 @@ export function ClinicianNav({
               value={model.patient.trackerId}
               onChange={(event) => {
                 const trackerId = event.target.value;
-                if (trackerId && trackerId !== model.patient.trackerId) router.push(href(model.patient.file, trackerId));
+                if (trackerId && trackerId !== model.patient.trackerId) router.push(href(model.patient.file, page, trackerId));
               }}
             >
               {trackers.map((tracker) => <option key={tracker.id} value={tracker.id}>{tracker.name}</option>)}

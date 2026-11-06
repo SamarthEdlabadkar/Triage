@@ -138,9 +138,7 @@ export type ClinicianModel = {
   plan: {
     status: string;
     updated: string;
-    expiration: string;
     retest: string | null;
-    expired: boolean;
     retestOverdue: boolean;
   } | null;
   days: DayView[];
@@ -824,29 +822,10 @@ export function buildClinicianModel(
     ? {
         status: planRaw.status,
         updated: short(planRaw.lastUpdated.slice(0, 10)),
-        expiration: `${short(planRaw.expiration.slice(0, 10))}, ${planRaw.expiration.slice(0, 4)}`,
         retest: planRaw.retestTime ? short(planRaw.retestTime.slice(0, 10)) : null,
-        expired: planRaw.expiration.slice(0, 10) < VISIT,
         retestOverdue: Boolean(planRaw.retestTime && planRaw.retestTime.slice(0, 10) < VISIT),
       }
     : null;
-  if (plan?.expired) {
-    review.push({
-      sev: "Plan",
-      tone: "warn",
-      title: "Action plan expiration date has passed",
-      detail: `Recorded expiration ${plan.expiration}. Daily zone history is not stored.`,
-      day: null,
-    });
-  } else if (plan && planRaw && planRaw.expiration.slice(0, 10) <= addDays(VISIT, 45)) {
-    review.push({
-      sev: "Plan",
-      tone: "muted",
-      title: `Action plan expiration is ${plan.expiration}`,
-      detail: "Only the current status is in the record.",
-      day: null,
-    });
-  }
   if (plan?.retestOverdue) {
     review.push({
       sev: "Plan",
@@ -919,7 +898,7 @@ export function buildClinicianModel(
   if (plan) {
     summary.push({
       title: "Action plan",
-      text: `Recorded status ${plan.status}. Last updated ${plan.updated}. Expiration ${plan.expiration}.${plan.retest ? ` Retest date ${plan.retest}.` : ""} Daily zones are not stored.`,
+      text: `Recorded status ${plan.status}. Last updated ${plan.updated}.${plan.retest ? ` Retest date ${plan.retest}.` : ""} Daily zones are not stored.`,
     });
   }
   summary.push({

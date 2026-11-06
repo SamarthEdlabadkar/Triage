@@ -6,8 +6,10 @@
 }
 
 .board {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
   gap: 20px;
 }
 
@@ -45,7 +47,6 @@
 .day-cell { height: 22px; padding: 0; border-radius: 999px; cursor: pointer; color: var(--color-text); }
 .compare-row { display: grid; grid-template-columns: minmax(120px, 170px) minmax(0, 1fr); gap: 12px; align-items: center; }
 .review-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 12px; }
-.med-cell { padding: 5px; }
 .summary-doc { padding: 32px 36px; }
 .summary-title { font-size: 28px; }
 .summary-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
@@ -140,8 +141,9 @@
 
 .only-phone, .scroll-hint { display: none; }
 
-.span-12 { grid-column: span 12; }
-.span-6 { grid-column: span 6; }
+.span-12 { flex: 0 0 100%; min-width: 0; }
+.span-6 { flex: 0 1 calc((100% - 20px) / 2); min-width: 0; display: flex; }
+.span-6 > .card { flex: 1; min-height: 320px; justify-content: center; }
 
 .card {
   background: var(--color-surface);
@@ -271,15 +273,14 @@
 .custom-form-heading p { margin: 2px 0 0; font-size: 12px; }
 .module-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .module-option { display: flex; align-items: flex-start; gap: 10px; padding: 11px; border: 1px solid var(--color-divider); border-radius: 12px; background: var(--color-surface); cursor: pointer; }
-.module-option input { margin: 3px 0 0; accent-color: var(--color-accent); }
+.module-option input { margin: 3px 0 0; accent-color: var(--color-accent-2-700); }
 .module-option strong, .module-option small { display: block; }
 .module-option strong { font-size: 13px; }
 .module-option small { margin-top: 2px; color: var(--color-neutral-700); font-size: 11px; line-height: 1.35; }
-.module-selected { border-color: var(--color-accent); background: var(--color-accent-100); }
+.module-selected { border-color: var(--color-accent-2-600); background: var(--color-accent-2-100); }
 .module-unavailable { opacity: .55; cursor: not-allowed; }
 .custom-error { margin: 0; color: var(--color-accent-800); font-size: 13px; }
-.custom-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
-.custom-actions span { font-size: 11px; }
+.custom-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 8px; }
 
 .patient-view { display: flex; flex-direction: column; gap: 20px; }
 .patient-view > header h2 { margin: 4px 0; font-size: 36px; }
@@ -289,8 +290,8 @@
 .patient-view-card p.muted { margin-top: 12px; font-size: 13px; }
 
 @media (max-width: 980px) {
-  .board { grid-template-columns: minmax(0, 1fr); }
-  .span-12, .span-6 { grid-column: auto; }
+  .span-12, .span-6 { flex-basis: 100%; }
+  .span-6 > .card { min-height: 0; }
   .split { grid-template-columns: minmax(0, 1fr) !important; }
   .scroll-hint { display: inline; }
   .snapshot { grid-template-columns: minmax(0, 1fr); }
