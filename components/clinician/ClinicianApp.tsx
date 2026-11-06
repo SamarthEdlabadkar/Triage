@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import {
   answerQuestion,
@@ -10,11 +10,13 @@ import {
   type PatientChoice,
 } from "@/lib/clinician-model";
 
+type Audience = "clinician" | "patient";
 type View = "overview" | "timeline" | "ask" | "summary";
 type WidgetId = "snapshot" | "changed" | "lung" | "compare" | "review" | "timeline" | "meds" | "plan";
+type SpecialistView = { id: string; name: string; modules: WidgetId[] };
 
 const WIDGETS: Record<WidgetId, { name: string; desc: string }> = {
-  snapshot: { name: "30-second snapshot", desc: "The main reported measures" },
+  snapshot: { name: "Overview and calendar", desc: "Key reported measures beside a month calendar" },
   changed: { name: "What changed", desc: "Last 14 days versus the 14 before" },
   lung: { name: "Lung function", desc: "Quality-aware FEV1 chart" },
   compare: { name: "Window comparison", desc: "The two halves of this window" },
@@ -24,39 +26,27 @@ const WIDGETS: Record<WidgetId, { name: string; desc: string }> = {
   plan: { name: "Action plan", desc: "The status stored on the record" },
 };
 
-const PRESETS: Record<string, { label: string; desc: string; order: WidgetId[]; off: WidgetId[] }> = {
-  pulm: {
-    label: "Pulmonology",
-    desc: "Lung function and the recent change first",
-    order: ["snapshot", "changed", "lung", "compare", "review", "timeline", "meds", "plan"],
-    off: [],
-  },
-  primary: {
-    label: "Primary care",
-    desc: "Reporting, medication, and the plan",
-    order: ["snapshot", "changed", "meds", "plan", "review", "timeline", "lung", "compare"],
-    off: ["lung", "compare"],
-  },
-  nurse: {
-    label: "Nurse / NP",
-    desc: "Pre-visit prep: doses, gaps, follow-ups",
-    order: ["snapshot", "meds", "review", "plan", "changed", "timeline", "lung", "compare"],
-    off: ["lung", "compare"],
-  },
-};
+const MODULE_IDS = Object.keys(WIDGETS) as WidgetId[];
+const GENERAL_MODULES: WidgetId[] = ["snapshot", "changed", "lung", "compare", "review", "timeline", "meds", "plan"];
+const WIDE_MODULES = new Set<WidgetId>(["snapshot", "timeline"]);
+const STORAGE_KEY = "smarthome-specialist-views-v1";
 
-function layoutFor(preset: string, kind: ClinicianModel["patient"]["kind"]) {
-  const source = PRESETS[preset];
-  const unavailable = new Set<WidgetId>();
-  if (kind !== "asthma") {
-    unavailable.add("lung");
-    unavailable.add("plan");
+function moduleAvailable(id: WidgetId, kind: ClinicianModel["patient"]["kind"]) {
+  return kind === "asthma" || (id !== "lung" && id !== "plan");
+}
+
+function readSpecialistViews(): SpecialistView[] {
+  try {
+    const stored: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]");
+    if (!Array.isArray(stored)) return [];
+    return stored.flatMap((item) => {
+      if (!item || typeof item.id !== "string" || typeof item.name !== "string" || !Array.isArray(item.modules)) return [];
+      const modules = item.modules.filter((id: unknown): id is WidgetId => typeof id === "string" && MODULE_IDS.includes(id as WidgetId));
+      return modules.length ? [{ id: item.id, name: item.name, modules }] : [];
+    });
+  } catch {
+    return [];
   }
-  return source.order.map((id) => ({
-    id,
-    on: !source.off.includes(id) && !unavailable.has(id),
-    wide: id === "snapshot" || id === "timeline",
-  }));
 }
 
 function download(name: string, text: string, type: string) {
@@ -80,11 +70,11 @@ export function ClinicianApp({
   patients: PatientChoice[];
 }) {
   const [view, setView] = useState<View>("overview");
-  const [consult, setConsult] = useState(false);
-  const [preset, setPreset] = useState("pulm");
-  const [layout, setLayout] = useState(() => layoutFor("pulm", model.patient.kind));
+  const [audience, setAudience] = useState<Audience>("clinician");
+  const [specialistViews, setSpecialistViews] = useState<SpecialistView[]>([]);
+  const [selectedViewId, setSelectedViewId] = useState("general");
   const [customOpen, setCustomOpen] = useState(false);
-  const [day, setDay] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showQ, setShowQ] = useState(true);
   const [askInput, setAskInput] = useState("");
   const [asking, setAsking] = useState(false);
@@ -93,17 +83,28 @@ export function ClinicianApp({
   const router = useRouter();
 
   const days = model.days;
-  const chart = useMemo(() => buildChart(days, showQ), [days, showQ]);
-  const selected = day == null ? null : days[day];
+  const chart = useMemo(() => buildChart(days), [days]);
+  const selectedIndex = selectedDate == null ? -1 : model.history.findIndex((item) => item.date === selectedDate);
+  const selected = selectedIndex < 0 ? null : model.history[selectedIndex];
+  const selectedSpecialistView = specialistViews.find((item) => item.id === selectedViewId);
+  const visible = (selectedSpecialistView?.modules ?? GENERAL_MODULES).filter((id) => moduleAvailable(id, model.patient.kind));
 
-  // Views share one page, so without this a phone stays scrolled partway down the new view.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSpecialistViews(readSpecialistViews()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [view, consult]);
+  }, [view, audience, selectedViewId]);
 
   function openDay(index: number | null) {
-    if (index == null || index < 0) return;
-    setDay(Math.max(0, Math.min(days.length - 1, index)));
+    if (index == null || index < 0 || index >= days.length) return;
+    setSelectedDate(days[index].date);
+  }
+
+  function openDate(date: string) {
+    if (model.history.some((item) => item.date === date)) setSelectedDate(date);
   }
 
   function ask(question: string) {
@@ -113,7 +114,6 @@ export function ClinicianApp({
     setAskInput("");
     setAsking(true);
     setView("ask");
-    setConsult(false);
     const result = answerQuestion(model, query);
     window.setTimeout(() => {
       setMsgs((current) => [...current, { role: "ai", text: result.text, dates: result.dates }]);
@@ -121,7 +121,6 @@ export function ClinicianApp({
     }, 400);
   }
 
-  const visible = layout.filter((item) => item.on);
   const trackers = patients.find((patient) => patient.file === model.patient.file)?.trackers ?? [];
   const href = (file: string, trackerId?: string) => {
     const params = new URLSearchParams({ patient: file });
@@ -132,41 +131,13 @@ export function ClinicianApp({
   return (
     <div className="shell">
       <header className="app-header">
+        <div className="brand-cluster">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-accent)", display: "grid", placeItems: "center", color: "var(--color-bg)", fontWeight: 700 }}>
             S
           </div>
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 21 }}>SMART@Home</div>
         </div>
-        {!consult ? (
-          <nav className="tabs" aria-label="Clinician views">
-            {(
-              [
-                ["overview", "Overview", "Overview"],
-                ["timeline", "Timeline & records", "Timeline"],
-                ["ask", "Ask the data", "Ask"],
-                ["summary", "Visit summary", "Summary"],
-              ] as const
-            ).map(([id, label, shortLabel]) => (
-              <button
-                key={id}
-                type="button"
-                className="tab"
-                aria-current={view === id ? "page" : undefined}
-                onClick={() => { setView(id); setConsult(false); }}
-                style={{
-                  background: view === id ? "var(--color-text)" : "transparent",
-                  color: view === id ? "var(--color-bg)" : "var(--color-text)",
-                }}
-              >
-                <span className="hide-phone">{label}</span>
-                <span className="only-phone">{shortLabel}</span>
-              </button>
-            ))}
-          </nav>
-        ) : null}
-        <div className="header-tools">
-          <span className="muted" style={{ fontSize: 12 }}>Synthetic dataset — not a real patient</span>
           <div className="patient-form">
             <label className="muted" htmlFor="patient" style={{ fontSize: 12, alignSelf: "center" }}>Patient</label>
             <select
@@ -183,231 +154,229 @@ export function ClinicianApp({
               ))}
             </select>
           </div>
-          <button className={`btn ${consult ? "btn-primary" : "btn-secondary"}`} type="button" onClick={() => { setConsult((value) => !value); setDay(null); }}>
-            {consult ? "Exit consultation mode" : "Consultation mode"}
-          </button>
+        </div>
+        <nav className="tabs" aria-label="Pages">
+            {([
+              ["overview", "Overview", "Overview"],
+              ["timeline", "Timeline & records", "Timeline"],
+              ["ask", "Ask the data", "Ask"],
+              ["summary", "Visit summary", "Summary"],
+            ] as const).map(([id, label, shortLabel]) => (
+              <button
+                key={id}
+                type="button"
+                className="tab"
+                aria-current={view === id ? "page" : undefined}
+                onClick={() => { setView(id); setSelectedDate(null); }}
+                style={{
+                  background: view === id ? "var(--color-text)" : "transparent",
+                  color: view === id ? "var(--color-bg)" : "var(--color-text)",
+                }}
+              >
+                <span className="hide-phone">{label}</span>
+                <span className="only-phone">{shortLabel}</span>
+              </button>
+            ))}
+        </nav>
+        <div className="layout-tools" role="group" aria-label="Overview layout">
+            <span className="muted" style={{ fontSize: 12 }}>View</span>
+            {(["clinician", "patient"] as const).map((id) => (
+              <button key={id} type="button" className="preset" aria-pressed={audience === id && (id === "patient" || selectedViewId === "general")} onClick={() => { setAudience(id); if (id === "clinician") setSelectedViewId("general"); setView("overview"); }} style={{
+                background: audience === id && (id === "patient" || selectedViewId === "general") ? "var(--color-accent)" : "transparent",
+                color: audience === id && (id === "patient" || selectedViewId === "general") ? "var(--color-bg)" : "var(--color-text)",
+              }}>{id === "clinician" ? "Clinician view" : "Patient view"}</button>
+            ))}
+            {specialistViews.map((item) => (
+              <button key={item.id} type="button" className="preset" aria-pressed={audience === "clinician" && selectedViewId === item.id} onClick={() => { setAudience("clinician"); setSelectedViewId(item.id); setView("overview"); }} style={{
+                background: audience === "clinician" && selectedViewId === item.id ? "var(--color-accent)" : "transparent",
+                color: audience === "clinician" && selectedViewId === item.id ? "var(--color-bg)" : "var(--color-text)",
+              }}>{item.name}</button>
+            ))}
+            <button className="btn btn-secondary" type="button" onClick={() => setCustomOpen(true)}>Customize</button>
+        </div>
+        <div className="header-tools">
+          {trackers.length > 1 ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <label className="muted" htmlFor="tracker" style={{ fontSize: 12 }}>Tracker</label>
+              <select
+                id="tracker"
+                className="select"
+                value={model.patient.trackerId}
+                onChange={(event) => {
+                  const trackerId = event.target.value;
+                  if (trackerId && trackerId !== model.patient.trackerId) router.push(href(model.patient.file, trackerId));
+                }}
+              >
+                {trackers.map((tracker) => (
+                  <option key={tracker.id} value={tracker.id}>{tracker.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : null}
         </div>
       </header>
 
-      <section className="hero">
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--color-accent-2-200)", color: "var(--color-accent-2-800)", display: "grid", placeItems: "center", fontFamily: "var(--font-heading)", fontSize: 20 }}>
-            {model.patient.initials}
-          </div>
-          <div>
-            <h1 className="patient-name">{model.patient.name}</h1>
-            <div className="muted" style={{ fontSize: 14 }}>{model.visitLabel}</div>
-          </div>
-        </div>
-        {trackers.length > 1 ? (
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <label className="muted" htmlFor="tracker" style={{ fontSize: 12 }}>Tracker</label>
-            <select
-              id="tracker"
-              className="select"
-              value={model.patient.trackerId}
-              onChange={(event) => {
-                const trackerId = event.target.value;
-                if (trackerId && trackerId !== model.patient.trackerId) router.push(href(model.patient.file, trackerId));
-              }}
-            >
-              {trackers.map((tracker) => (
-                <option key={tracker.id} value={tracker.id}>{tracker.name}</option>
-              ))}
-            </select>
-          </div>
-        ) : null}
-        {!consult && view === "overview" ? (
-          <div className="layout-tools">
-            <span className="muted" style={{ fontSize: 12 }}>Layout</span>
-            {Object.entries(PRESETS).map(([key, item]) => (
-              <button
-                key={key}
-                type="button"
-                className="preset"
-                aria-pressed={preset === key}
-                onClick={() => { setPreset(key); setLayout(layoutFor(key, model.patient.kind)); }}
-                style={{
-                  background: preset === key ? "var(--color-accent)" : "transparent",
-                  color: preset === key ? "var(--color-bg)" : "var(--color-text)",
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-            <button className="btn btn-secondary" type="button" onClick={() => setCustomOpen(true)}>Customise</button>
-          </div>
-        ) : null}
-      </section>
-
-      {model.scenario ? (
-        <p className="muted scenario">
-          <strong style={{ color: "var(--color-text)" }}>Scenario note, synthetic ground truth. </strong>
-          {model.scenario}
-        </p>
-      ) : null}
-
+      
       <main className="page-main">
-        {!consult && view === "overview" ? (
+        {view === "overview" && audience === "clinician" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <form
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 8px 8px 20px", background: "var(--color-neutral-100)", borderRadius: 999, boxShadow: "var(--shadow-sm)" }}
-              onSubmit={(event) => { event.preventDefault(); ask(askInput); }}
-            >
-              <input
-                value={askInput}
-                onChange={(event) => setAskInput(event.target.value)}
-                placeholder={`Ask about ${model.patient.name.split(" ")[0]}’s data`}
-                className="ask-input"
-              />
-              <button className="btn btn-primary" type="submit">Ask</button>
-            </form>
             <div className="board">
-              {visible.map((item) => (
-                <div key={item.id} className={item.wide ? "span-12" : "span-6"}>
-                  {item.id === "snapshot" ? <Snapshot model={model} onOpen={openDay} onTimeline={() => setView("timeline")} /> : null}
-                  {item.id === "changed" ? <Changed model={model} onOpen={openDay} /> : null}
-                  {item.id === "lung" ? <Lung model={model} chart={chart} showQ={showQ} onToggle={() => setShowQ((value) => !value)} onOpen={openDay} /> : null}
-                  {item.id === "compare" ? <Compare model={model} /> : null}
-                  {item.id === "review" ? <Review model={model} onOpen={openDay} /> : null}
-                  {item.id === "timeline" ? <Timeline model={model} chart={chart} compact onOpen={openDay} onFull={() => setView("timeline")} /> : null}
-                  {item.id === "meds" ? <Meds model={model} onOpen={openDay} /> : null}
-                  {item.id === "plan" ? <Plan model={model} /> : null}
+              {visible.map((id) => (
+                <div key={id} className={WIDE_MODULES.has(id) ? "span-12" : "span-6"}>
+                  {id === "snapshot" ? <Snapshot model={model} onOpenDate={openDate} /> : null}
+                  {id === "changed" ? <Changed model={model} onOpen={openDay} /> : null}
+                  {id === "lung" ? <Lung model={model} chart={chart} showQ={showQ} onToggle={() => setShowQ((value) => !value)} onOpen={openDay} /> : null}
+                  {id === "compare" ? <Compare model={model} /> : null}
+                  {id === "review" ? <Review model={model} onOpen={openDay} /> : null}
+                  {id === "timeline" ? <Timeline model={model} chart={chart} onOpen={openDay} /> : null}
+                  {id === "meds" ? <Meds model={model} onOpen={openDay} /> : null}
+                  {id === "plan" ? <Plan model={model} /> : null}
                 </div>
               ))}
             </div>
-            <div className="muted" style={{ fontSize: 12 }}>
-              Showing {visible.length} widgets · layout “{preset === "custom" ? "Custom" : PRESETS[preset].label}”. {model.aggregationNote}
-            </div>
+            <p className="muted" style={{ fontSize: 12 }}>Showing {visible.length} modules in {selectedSpecialistView?.name ?? "General"}. {model.aggregationNote}</p>
           </div>
         ) : null}
-
-        {!consult && view === "timeline" ? (
+        {view === "overview" && audience === "patient" ? <PatientView model={model} chart={chart} onOpen={openDay} /> : null}
+        {view === "timeline" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <Timeline model={model} chart={chart} onOpen={openDay} />
             <Records model={model} onOpen={openDay} />
           </div>
         ) : null}
-
-        {!consult && view === "ask" ? (
-          <Ask
-            model={model}
-            msgs={msgs}
-            asking={asking}
-            askInput={askInput}
-            setAskInput={setAskInput}
-            onAsk={ask}
-            onOpenDate={(date) => openDay(days.findIndex((item) => item.date === date))}
-          />
+        {view === "ask" ? (
+          <Ask model={model} msgs={msgs} asking={asking} askInput={askInput} setAskInput={setAskInput} onAsk={ask} onOpenDate={openDate} />
         ) : null}
-
-        {!consult && view === "summary" ? (
-          <Summary
-            model={model}
-            copied={copied}
-            onCopy={() => {
-              navigator.clipboard?.writeText(model.summaryText).catch(() => undefined);
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1800);
-            }}
-          />
+        {view === "summary" ? (
+          <Summary model={model} copied={copied} onCopy={() => {
+            navigator.clipboard?.writeText(model.summaryText).catch(() => undefined);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1800);
+          }} />
         ) : null}
-
-        {consult ? <Consult model={model} chart={chart} /> : null}
       </main>
 
       {selected ? (
         <Drawer
           day={selected}
-          onClose={() => setDay(null)}
-          onPrev={() => openDay(day! - 1)}
-          onNext={() => openDay(day! + 1)}
+          onClose={() => setSelectedDate(null)}
+          onPrev={() => selectedIndex > 0 && setSelectedDate(model.history[selectedIndex - 1].date)}
+          onNext={() => selectedIndex < model.history.length - 1 && setSelectedDate(model.history[selectedIndex + 1].date)}
         />
       ) : null}
       {customOpen ? (
         <Customize
-          layout={layout}
-          preset={preset}
+          views={specialistViews}
+          activeView={audience === "clinician" ? selectedSpecialistView ?? null : null}
+          kind={model.patient.kind}
           onClose={() => setCustomOpen(false)}
-          onPreset={(key) => { setPreset(key); setLayout(layoutFor(key, model.patient.kind)); }}
-          onEdit={(next) => { setLayout(next); setPreset("custom"); }}
+          onSave={(next) => {
+            const views = specialistViews.some((item) => item.id === next.id)
+              ? specialistViews.map((item) => item.id === next.id ? next : item)
+              : [...specialistViews, next];
+            setSpecialistViews(views);
+            setAudience("clinician");
+            setSelectedViewId(next.id);
+            setView("overview");
+            try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(views)); } catch { /* Browser storage may be unavailable. */ }
+            setCustomOpen(false);
+          }}
         />
       ) : null}
     </div>
   );
 }
 
-function Snapshot({ model, onOpen, onTimeline }: { model: ClinicianModel; onOpen: (index: number | null) => void; onTimeline: () => void }) {
+function Snapshot({ model, onOpenDate }: { model: ClinicianModel; onOpenDate: (date: string) => void }) {
   return (
-    <article className="card" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-        <h3 style={{ margin: 0, fontSize: 21 }}>30-second snapshot</h3>
-        <span className="muted" style={{ fontSize: 13 }}>Patient-reported unless noted · open a figure for that day</span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(210px, 100%), 1fr))", gap: 12 }}>
-        {model.cards.map((card) => (
-          <button
-            key={card.kicker}
-            type="button"
-            className="tile"
-            onClick={() => {
-              if (card.view === "timeline") onTimeline();
-              else if (card.day != null) onOpen(card.day);
-            }}
-          >
-            <div className="kicker">{card.kicker}</div>
-            <div className="figure">{card.value}<span style={{ fontSize: 18 }} className="faint"> {card.unit}</span></div>
-            <div style={{ fontSize: 13 }}>{card.line}</div>
-            {card.bar ? (
-              <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", gap: 2, marginTop: 6 }}>
-                <div style={{ flex: card.bar.taken, background: "var(--color-accent-2-600)" }} />
-                <div style={{ flex: Math.max(card.bar.rest, 0.001), background: "var(--color-neutral-300)" }} />
-              </div>
-            ) : null}
-            <div style={{ fontSize: 12, color: "var(--color-accent-2-800)", fontWeight: 700, marginTop: 4 }}>{card.note}</div>
-          </button>
-        ))}
-      </div>
-      <DayStrip days={model.days} onOpen={onOpen} />
+    <article className="card snapshot">
+      <section className="snapshot-overview" aria-labelledby="snapshot-heading">
+        <div className="snapshot-heading">
+          <h3 id="snapshot-heading">30-second snapshot</h3>
+          <p className="muted">{model.rangeLabel} </p>
+        </div>
+        <dl className="snapshot-metrics">
+          {model.cards.map((card) => (
+            <div className="snapshot-metric" key={card.kicker}>
+              <dt>{card.kicker}</dt>
+              <dd><strong>{card.value}</strong> <span>{card.unit}</span></dd>
+              <p>{card.line}</p>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <MonthCalendar days={model.history} onOpenDate={onOpenDate} />
     </article>
   );
 }
 
-function DayStrip({ days, onOpen }: { days: DayView[]; onOpen: (index: number) => void }) {
+function monthKey(year: number, month: number) {
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function shiftMonth(key: string, amount: number) {
+  const [year, month] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1 + amount, 1));
+  return monthKey(date.getUTCFullYear(), date.getUTCMonth() + 1);
+}
+
+function MonthCalendar({ days, onOpenDate }: { days: DayView[]; onOpenDate: (date: string) => void }) {
+  const firstMonth = days[0]?.date.slice(0, 7) ?? "2026-11";
+  const lastMonth = days[days.length - 1]?.date.slice(0, 7) ?? firstMonth;
+  const [month, setMonth] = useState(lastMonth);
+  const byDate = useMemo(() => new Map(days.map((day) => [day.date, day])), [days]);
+  const [year, monthNumber] = month.split("-").map(Number);
+  const label = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, monthNumber - 1, 1)));
+  const firstWeekday = new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay();
+  const count = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+
+  function move(amount: number) {
+    const next = shiftMonth(month, amount);
+    setMonth(next < firstMonth ? firstMonth : next > lastMonth ? lastMonth : next);
+  }
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }} className="muted">
-        <span style={{ fontWeight: 700, color: "var(--color-text)" }}>Reported days</span>
-        <span>Filled = symptoms or headache · pale = logged without those · dashed = no entry</span>
+    <section className="month-calendar" aria-label="Reported days calendar">
+      <div className="calendar-header">
+        <div>
+          <h3>Reported days</h3>
+          <p className="muted">Select a day to review its entries</p>
+        </div>
+        <div className="calendar-nav">
+          <button type="button" aria-label="Previous month" disabled={month <= firstMonth} onClick={() => move(-1)}>‹</button>
+          <strong aria-live="polite">{label}</strong>
+          <button type="button" aria-label="Next month" disabled={month >= lastMonth} onClick={() => move(1)}>›</button>
+        </div>
       </div>
-      <div className="day-strip" style={{ "--day-count": days.length } as CSSProperties}>
-        {days.map((day, index) => {
-          const marked = day.symptoms.length > 0 || day.headache === true;
+      <div className="calendar-grid" role="grid" aria-label={label}>
+        {["S", "M", "T", "W", "T", "F", "S"].map((name, index) => <span className="calendar-weekday" key={index} aria-hidden="true">{name}</span>)}
+        {Array.from({ length: firstWeekday + count }, (_, index) => {
+          if (index < firstWeekday) return <span key={`pad-${index}`} aria-hidden="true" />;
+          const date = `${month}-${String(index - firstWeekday + 1).padStart(2, "0")}`;
+          const day = byDate.get(date);
+          const reported = Boolean(day?.logged);
+          const symptomatic = Boolean(day && (day.symptoms.length || day.headache));
+          if (!day) return <span className="calendar-outside" key={date}>{index - firstWeekday + 1}</span>;
           return (
             <button
-              key={day.date}
+              key={date}
               type="button"
-              className="day-cell"
-              title={`${day.short}${day.logged ? "" : " · no entry"}`}
-              aria-label={`${day.short}: ${!day.logged ? "no entry" : marked ? "symptoms or headache reported" : "logged without symptoms or headache"}`}
-              onClick={() => onOpen(index)}
-              style={{
-                background: !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)",
-                border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)",
-                opacity: day.active ? 1 : 0.35,
-              }}
+              className={`calendar-day ${reported ? symptomatic ? "calendar-symptoms" : "calendar-reported" : "calendar-missing"}`}
+              aria-label={`${day.long}: ${reported ? symptomatic ? "symptoms or headache reported" : "tracker response, no symptoms or headache reported" : "no tracker response"}`}
+              onClick={() => onOpenDate(date)}
             >
-              <span className="only-phone">{day.num}</span>
+              {day.num}
+              {reported ? <span className="calendar-dot" aria-hidden="true" /> : null}
             </button>
           );
         })}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }} className="faint">
-        <span>{days[0].short}</span>
-        <span className="hide-phone">{days[14].short}</span>
-        <span>{days[days.length - 1].short}</span>
+      <div className="calendar-legend">
+        <span><i className="legend-reported" />Reported</span>
+        <span><i className="legend-symptoms" />Symptoms reported</span>
+        <span><i className="legend-missing" />No response</span>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -535,7 +504,7 @@ function Review({ model, onOpen }: { model: ClinicianModel; onOpen: (index: numb
   );
 }
 
-function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianModel; chart: Chart; compact?: boolean; onOpen: (index: number) => void; onFull?: () => void }) {
+function Timeline({ model, chart, onOpen }: { model: ClinicianModel; chart: Chart; onOpen: (index: number) => void }) {
   const days = model.days;
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -552,7 +521,6 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
           <h3 style={{ margin: 0, fontSize: 21 }}>Synchronized timeline</h3>
           <div className="muted" style={{ fontSize: 13 }}>Aligned by date · select a column for the submissions<span className="scroll-hint"> · swipe right for earlier days</span></div>
         </div>
-        {onFull ? <button className="btn btn-ghost" type="button" onClick={onFull}>Full timeline & records →</button> : null}
       </div>
       <div className="scroll-x" ref={scroller} tabIndex={0} role="region" aria-label="Timeline by date, scrollable">
         <div className="track" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -596,7 +564,7 @@ function Timeline({ model, chart, compact, onOpen, onFull }: { model: ClinicianM
           {model.patient.kind === "asthma" ? (
             <div className="tl-row">
               <div className="tl-label">FEV1</div>
-              <div style={{ position: "relative", height: compact ? 56 : 90 }}>
+              <div style={{ position: "relative", height: 90 }}>
                 <svg viewBox="0 0 1000 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
                   <path d={chart.path} fill="none" stroke="var(--color-accent-2-600)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
                 </svg>
@@ -816,30 +784,39 @@ function Summary({ model, copied, onCopy }: { model: ClinicianModel; copied: boo
   );
 }
 
-function Consult({ model, chart }: { model: ClinicianModel; chart: Chart }) {
-  const good = model.days.filter((day) => day.logged && day.symptoms.length === 0 && day.headache !== true).length;
-  const hard = model.days.filter((day) => day.logged && (day.symptoms.length > 0 || day.headache === true)).length;
+function PatientView({ model, chart, onOpen }: { model: ClinicianModel; chart: Chart; onOpen: (index: number) => void }) {
+  const withoutSymptoms = model.days.filter((day) => day.logged && day.symptoms.length === 0 && day.headache !== true).length;
+  const withSymptoms = model.days.filter((day) => day.logged && (day.symptoms.length > 0 || day.headache === true)).length;
+  const noResponse = model.days.filter((day) => day.active && !day.logged).length;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <h2 className="consult-title">{model.patient.name.split(" ")[0]}’s last 4 weeks</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 24 }}>
-        <article className="card consult-card">
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>How the days were reported</div>
-          <div style={{ fontSize: 22, marginTop: 12 }}><b>{good} quieter days</b>, {hard} days with symptoms or headache</div>
+    <div className="patient-view">
+      <header>
+        <p className="kicker">Patient view · synthetic example</p>
+        <h2>{model.patient.name.split(" ")[0]}’s last 4 weeks</h2>
+        <p className="muted">A simple look at what was reported at home. You can discuss any day with your care team.</p>
+      </header>
+      <div className="patient-view-grid">
+        <article className="card patient-view-card">
+          <h3>Days you checked in</h3>
+          <p><strong>{withoutSymptoms}</strong> days without symptoms reported</p>
+          <p><strong>{withSymptoms}</strong> days with symptoms or headache reported</p>
+          <p className="muted">{noResponse} days had no tracker response. A missing response does not say how you felt.</p>
         </article>
-        <article className="card consult-card">
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>Daily medicine</div>
-          <div style={{ fontSize: 22, marginTop: 12 }}>Marked taken <b>{model.doseLegend.taken}</b> times. Not marked <b>{model.doseLegend.open}</b> times.</div>
-          <div className="muted" style={{ marginTop: 8 }}>A missing mark is not proof a dose was skipped.</div>
+        <article className="card patient-view-card">
+          <h3>Daily medicine</h3>
+          <p>Marked taken <strong>{model.doseLegend.taken}</strong> times</p>
+          <p>Not marked <strong>{model.doseLegend.open}</strong> times</p>
+          <p className="muted">These are your app marks. Not marked does not confirm a dose was skipped.</p>
         </article>
       </div>
       {model.patient.kind === "asthma" ? (
-        <article className="card consult-card">
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: 28 }}>Breathing test</div>
-          <div style={{ fontSize: 18, margin: "8px 0 16px" }}>Air blown out in one second, using blows that passed the device check. Higher on the chart is a larger volume.</div>
-          <ChartFrame chart={chart} points={chart.points.filter((point) => point.ok)} height={240} onOpen={() => undefined} />
+        <article className="card patient-view-card">
+          <h3>Breathing test</h3>
+          <p className="muted">FEV1 is the air blown out in one second. This chart uses home readings that passed the device check.</p>
+          <ChartFrame chart={chart} points={chart.points.filter((point) => point.ok)} height={220} onOpen={onOpen} />
         </article>
       ) : null}
+      <p className="muted">This view uses patient-reported home data. It does not write to the medical record.</p>
     </div>
   );
 }
@@ -905,44 +882,103 @@ function Drawer({ day, onClose, onPrev, onNext }: { day: DayView; onClose: () =>
 }
 
 function Customize({
-  layout, preset, onClose, onPreset, onEdit,
+  views, activeView, kind, onClose, onSave,
 }: {
-  layout: Array<{ id: WidgetId; on: boolean; wide: boolean }>;
-  preset: string;
+  views: SpecialistView[];
+  activeView: SpecialistView | null;
+  kind: ClinicianModel["patient"]["kind"];
   onClose: () => void;
-  onPreset: (key: string) => void;
-  onEdit: (next: Array<{ id: WidgetId; on: boolean; wide: boolean }>) => void;
+  onSave: (view: SpecialistView) => void;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(activeView?.id ?? null);
+  const [name, setName] = useState(activeView?.name ?? "");
+  const [modules, setModules] = useState<WidgetId[]>(activeView?.modules ?? ["snapshot", "changed", "review", "timeline", "meds"]);
+  const [error, setError] = useState("");
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    return () => { if (dialog.open) dialog.close(); };
+  }, []);
+
+  function startNew() {
+    setEditingId(null);
+    setName("");
+    setModules(["snapshot", "changed", "review", "timeline", "meds"]);
+    setError("");
+  }
+
+  function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cleanName = name.trim();
+    if (!cleanName) { setError("Enter a name for this view."); return; }
+    if (!modules.length) { setError("Select at least one module."); return; }
+    if (/^(clinician|patient)( view)?$/i.test(cleanName)) { setError("Choose a name different from Clinician or Patient."); return; }
+    if (views.some((view) => view.id !== editingId && view.name.toLowerCase() === cleanName.toLowerCase())) {
+      setError("A view with this name already exists.");
+      return;
+    }
+    onSave({ id: editingId ?? crypto.randomUUID(), name: cleanName, modules });
+  }
+
   return (
-    <>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "color-mix(in srgb, var(--color-neutral-900) 35%, transparent)", zIndex: 20 }} />
-      <aside className="drawer" style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(440px, 100%)", background: "var(--color-bg)", boxShadow: "var(--shadow-lg)", zIndex: 21, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: 26, flex: 1 }}>Customise dashboard</h2>
-          <button className="btn btn-ghost" type="button" onClick={onClose}>Close</button>
+    <dialog ref={dialogRef} className="custom-dialog" aria-labelledby="customize-heading" onClose={onClose} onClick={(event) => {
+      if (event.target === event.currentTarget) dialogRef.current?.close();
+    }}>
+      <div className="custom-header">
+        <div>
+          <p className="kicker">Custom views</p>
+          <h2 id="customize-heading">Customize views</h2>
         </div>
-        {Object.entries(PRESETS).map(([key, item]) => (
-          <button key={key} type="button" onClick={() => onPreset(key)} style={{ textAlign: "left", borderRadius: 20, padding: "12px 16px", background: preset === key ? "var(--color-accent-100)" : "var(--color-surface)", border: preset === key ? "2px solid var(--color-accent)" : "2px solid transparent", fontFamily: "var(--font-body)", color: "var(--color-text)", cursor: "pointer" }}>
-            <div style={{ fontWeight: 700 }}>{item.label}</div>
-            <div className="muted" style={{ fontSize: 12 }}>{item.desc}</div>
-          </button>
-        ))}
-        {layout.map((item, index) => (
-          <div key={item.id} style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 12px", borderRadius: 18, background: "var(--color-surface)", opacity: item.on ? 1 : 0.55 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>{WIDGETS[item.id].name}</div>
-              <div className="muted" style={{ fontSize: 12 }}>{WIDGETS[item.id].desc}</div>
-            </div>
-            <button type="button" className="tag tag-neutral hide-phone" style={{ border: 0, cursor: "pointer" }} onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, wide: !widget.wide } : widget))}>{item.wide ? "Wide" : "Half"}</button>
-            <button type="button" className="btn btn-secondary" onClick={() => onEdit(layout.map((widget, widgetIndex) => widgetIndex === index ? { ...widget, on: !widget.on } : widget))}>{item.on ? "Hide" : "Show"}</button>
+        <button className="btn btn-ghost" type="button" onClick={() => dialogRef.current?.close()}>Close</button>
+      </div>
+      {views.length ? (
+        <div className="saved-views">
+          <span className="muted">Saved views</span>
+          {views.map((view) => (
+            <button key={view.id} type="button" aria-pressed={editingId === view.id} onClick={() => {
+              setEditingId(view.id); setName(view.name); setModules(view.modules); setError("");
+            }}>{view.name}</button>
+          ))}
+          <button type="button" onClick={startNew}>+ New view</button>
+        </div>
+      ) : null}
+      <form onSubmit={save} className="custom-form">
+        <label htmlFor="custom-view-name">View name</label>
+        <input id="custom-view-name" type="text" maxLength={40} value={name} onChange={(event) => { setName(event.target.value); setError(""); }} placeholder="e.g. Neurology" />
+        <div className="custom-form-heading">
+          <div>
+            <strong>Modules to show</strong>
+            <p className="muted">Select the information this view shows. {modules.length} selected.</p>
           </div>
-        ))}
-      </aside>
-    </>
+        </div>
+        <div className="module-picker">
+          {MODULE_IDS.map((id) => {
+            const available = moduleAvailable(id, kind);
+            return (
+              <label key={id} className={`module-option ${modules.includes(id) ? "module-selected" : ""} ${available ? "" : "module-unavailable"}`}>
+                <input type="checkbox" checked={modules.includes(id)} disabled={!available} onChange={(event) => {
+                  setModules((current) => event.target.checked ? [...current, id] : current.filter((item) => item !== id));
+                  setError("");
+                }} />
+                <span><strong>{WIDGETS[id].name}</strong><small>{available ? WIDGETS[id].desc : "Only available for the asthma tracker"}</small></span>
+              </label>
+            );
+          })}
+        </div>
+        {error ? <p className="custom-error" role="alert">{error}</p> : null}
+        <div className="custom-actions">
+          <span className="muted">Saved on this browser for this demo.</span>
+          <button className="btn btn-primary" type="submit">{editingId ? "Save changes" : "Create view"}</button>
+        </div>
+      </form>
+    </dialog>
   );
 }
 
-function buildChart(days: DayView[], _showQ: boolean) {
+function buildChart(days: DayView[]) {
   const values = days.flatMap((day) => (day.fev1 == null ? [] : [day.fev1]));
   const predicted = mean(days.flatMap((day) => (day.fev1Pct && day.fev1 ? [day.fev1 / (day.fev1Pct / 100)] : [])));
   const goal = predicted == null ? null : predicted * 0.8;
