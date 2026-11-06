@@ -34,7 +34,6 @@
   padding: 6px 12px;
   border-radius: 999px;
 }
-.scenario { margin: 0 32px 18px; font-size: 13px; }
 .page-main { padding: 0 32px 56px; }
 .ask-input {
   flex: 1;
@@ -73,7 +72,27 @@
   font-size: 12px;
   font-weight: 700;
 }
-.records-table { min-width: 860px; }
+.records-table { min-width: 0; table-layout: fixed; font-size: 13px; }
+.records-table th, .records-table td { padding: 7px 6px; overflow-wrap: anywhere; }
+.records-table th { letter-spacing: 0; }
+.records-table th:first-child { width: 104px; }
+.records-table th:last-child { width: 76px; }
+.records-table .rec-med-heading { width: 104px; }
+.record-med-name { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; letter-spacing: 0; }
+.records-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.records-filter-panel { font-size: 12px; }
+.records-filter-panel summary { cursor: pointer; font-weight: 700; list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--color-divider); border-radius: 9px; background: var(--color-neutral-100); }
+.records-filter-panel summary::-webkit-details-marker { display: none; }
+.records-filter-panel summary::after { content: "⌄"; font-size: 15px; line-height: 0.7; }
+.records-filter-panel[open] summary::after { transform: rotate(180deg); }
+.records-filter-panel[open] { flex-basis: 100%; }
+.records-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; align-items: end; }
+.records-filters label { display: grid; gap: 4px; font-size: 11px; font-weight: 700; }
+.records-filters input, .records-filters select { min-width: 0; width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--color-divider); border-radius: 10px; background-color: var(--color-neutral-100); color: var(--color-text); font: 12px var(--font-body); }
+.records-filters select { appearance: none; padding-right: 28px; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='m3 5 4 4 4-4' stroke='%235B5145' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
+.records-filters input:hover, .records-filters select:hover, .records-filter-panel summary:hover { border-color: var(--color-neutral-500); }
+.records-filters input:focus-visible, .records-filters select:focus-visible, .records-filter-panel summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.records-filters button { justify-self: start; }
 
 .chart-point { width: 14px; height: 14px; margin: -7px 0 0 -7px; padding: 0; }
 
@@ -202,7 +221,6 @@
   .layout-tools > .muted { width: 100%; }
   .preset { min-height: 44px; }
   .layout-tools > .btn { width: 100%; }
-  .scenario { margin: 0 16px 16px; }
   .page-main { padding: 0 16px 24px; }
 
   /* iOS Safari zooms the page when a focused control is under 16px. */
@@ -261,6 +279,8 @@
   }
   .records-table .rec-date, .records-table .rec-wide { grid-column: 1 / -1; }
   .records-table .rec-med { grid-column: span 2; }
+  .records-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .records-filters input, .records-filters select { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
