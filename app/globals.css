@@ -71,17 +71,40 @@
   font-size: 12px;
   font-weight: 700;
 }
-.records-table { min-width: 850px; table-layout: auto; font-size: 14px; }
-.table.records-table th, .table.records-table td { padding: 12px 16px; vertical-align: middle; }
-.table.records-table th { font-size: 15px; letter-spacing: 0; color: var(--color-text); white-space: nowrap; }
-.records-table tbody tr:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.records-table {
+  min-width: 850px;
+  table-layout: auto;
+  font-size: 14px;
+}
+.table.records-table th,
+.table.records-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+.table.records-table th {
+  font-size: 15px;
+  letter-spacing: 0;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.records-table tbody tr:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
 .records-table .rec-date { min-width: 125px; white-space: nowrap; }
 .records-table .rec-feeling { min-width: 120px; }
 .records-table .rec-symptoms { min-width: 220px; }
 .records-table .rec-med { min-width: 150px; }
 .records-table .rec-fev1 { min-width: 145px; }
 .records-table .rec-entries { min-width: 85px; }
-.record-med-name { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; letter-spacing: 0; white-space: normal; }
+.record-med-name {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: normal;
+}
 .records-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .records-filter-panel { font-size: 12px; }
 .records-filter-panel summary { cursor: pointer; font-weight: 700; list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--color-divider); border-radius: 9px; background: var(--color-neutral-100); }
@@ -89,9 +112,31 @@
 .records-filter-panel summary::after { content: "⌄"; font-size: 15px; line-height: 0.7; }
 .records-filter-panel[open] summary::after { transform: rotate(180deg); }
 .records-filter-panel[open] { flex-basis: 100%; }
-.records-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 12px; align-items: end; }
-.records-filters label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; }
-.records-filters input, .records-filters select { min-width: 0; width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--color-divider); border-radius: 10px; background-color: var(--color-surface); color: var(--color-text); font: 14px var(--font-body); }
+.records-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  align-items: end;
+}
+.records-filters label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.records-filters input,
+.records-filters select {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: 10px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font: 14px var(--font-body);
+}
 .records-filters select { appearance: none; padding-right: 28px; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Cpath d='m3 5 4 4 4-4' stroke='%235B5145' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
 .records-filters input:hover, .records-filters select:hover, .records-filter-panel summary:hover { border-color: var(--color-neutral-500); }
 .records-filters input:focus-visible, .records-filters select:focus-visible, .records-filter-panel summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }

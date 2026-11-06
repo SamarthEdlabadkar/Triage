@@ -463,31 +463,32 @@ export function buildClinicianModel(
 
     const ordered = [...submissions].sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
     const lastCounted = [...ordered].reverse().find((submission) => !blankSubmission(submission));
-    const submissionViews: SubmissionView[] = ordered.map((submission) => ({
-      time: nyTime(submission.submittedAt),
-      blank: blankSubmission(submission),
-      counts: submission === lastCounted,
-      lines: submission.responses
-        .map((response) => {
-          const item = byId.get(response.questionId);
-          if (!item) return "";
-          const answer = formatAnswer(item, response.value);
-          return answer ? `${item.text}: ${answer}` : "";
+    const submissionViews: SubmissionView[] = ordered.map((submission) => {
+      const answers = submission.responses.flatMap((response) => {
+        const item = byId.get(response.questionId);
+        if (!item) return [];
+        const answer = formatAnswer(item, response.value);
+        return answer ? [{ questionId: response.questionId, answer, line: `${item.text}: ${answer}` }] : [];
+      });
+
+      const detailLines = answers
+        .filter(({ questionId, answer }) => {
+          if (questionId === feelingQ?.questionId && answer === feeling) return false;
+          if (questionId === symptomQ?.questionId) {
+            return answer !== symptoms.join(", ") && !(answer === "None of these" && symptoms.length === 0);
+          }
+          return true;
         })
-        .filter(Boolean),
-      detailLines: submission.responses
-        .map((response) => {
-          const item = byId.get(response.questionId);
-          if (!item) return "";
-          const answer = formatAnswer(item, response.value);
-          if (!answer) return "";
-          if (response.questionId === feelingQ?.questionId && answer === feeling) return "";
-          if (response.questionId === symptomQ?.questionId &&
-            (answer === symptoms.join(", ") || (answer === "None of these" && symptoms.length === 0))) return "";
-          return `${item.text}: ${answer}`;
-        })
-        .filter(Boolean),
-    }));
+        .map(({ line }) => line);
+
+      return {
+        time: nyTime(submission.submittedAt),
+        blank: blankSubmission(submission),
+        counts: submission === lastCounted,
+        lines: answers.map(({ line }) => line),
+        detailLines,
+      };
+    });
 
     const doses: DoseView[] = [];
     for (const med of [...dailyMeds, ...rescueMeds]) {
