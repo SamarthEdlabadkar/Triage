@@ -1,9 +1,5 @@
-import { readFile, readdir } from "node:fs/promises";
-import path from "node:path";
-
 import type { GroundTruth, PatientDocument, TrackerDefinition } from "./types";
-
-const datasetRoot = path.join(process.cwd(), "datasets", "smarthome-dataset");
+import { getDb } from "./db";
 
 export function labelForPatientFile(filename: string) {
   return filename
@@ -13,44 +9,72 @@ export function labelForPatientFile(filename: string) {
     .join(" · ");
 }
 
+function personaIdFromFile(filename: string) {
+  return filename.replace(/\.json$/, "");
+}
+
+export type PatientSummary = {
+  file: string;
+  name: string;
+  trackers: Array<{ id: string; name: string }>;
+};
+
+export async function listPatients(): Promise<PatientSummary[]> {
+  const documents = await getDb()
+    .collection("patients")
+    .find(
+      {},
+      { projection: { _id: 0, personaId: 1, displayName: 1, assignedTrackers: 1 } },
+    )
+    .toArray();
+
+  return documents
+    .map((document) => ({
+      file: `${document.personaId}.json`,
+      name: String(document.displayName),
+      trackers: (document.assignedTrackers ?? []).map(
+        (tracker: { trackerId: string; trackerName: string }) => ({
+          id: tracker.trackerId,
+          name: tracker.trackerName,
+        }),
+      ),
+    }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
 export async function listPatientFiles() {
-  const files = await readdir(path.join(datasetRoot, "patients"));
-  return files.filter((filename) => filename.endsWith(".json")).sort();
+  const patients = await listPatients();
+  return patients.map((patient) => patient.file);
 }
 
 export async function loadPatient(filename: string): Promise<PatientDocument> {
-  const raw = await readFile(path.join(datasetRoot, "patients", filename), "utf8");
-  return JSON.parse(raw) as PatientDocument;
+  const patient = await getDb()
+    .collection("patients")
+    .findOne({ personaId: personaIdFromFile(filename) }, { projection: { _id: 0 } });
+
+  if (!patient) {
+    throw new Error(`Patient not found: ${filename}`);
+  }
+
+  return patient as unknown as PatientDocument;
 }
 
 export async function loadTrackersForPatient(
   patient: PatientDocument,
 ): Promise<TrackerDefinition[]> {
-  const trackerFiles = await readdir(path.join(datasetRoot, "trackers"));
-  const definitions: TrackerDefinition[] = [];
+  const trackerIds = patient.assignedTrackers.map((tracker) => tracker.trackerId);
+  const trackers = await getDb()
+    .collection("trackers")
+    .find({ trackerId: { $in: trackerIds } }, { projection: { _id: 0 } })
+    .toArray();
 
-  for (const filename of trackerFiles) {
-    if (!filename.endsWith(".json")) continue;
-    const raw = await readFile(path.join(datasetRoot, "trackers", filename), "utf8");
-    const tracker = JSON.parse(raw) as TrackerDefinition;
-    if (patient.assignedTrackers.some((assigned) => assigned.trackerId === tracker.trackerId)) {
-      definitions.push(tracker);
-    }
-  }
-
-  return definitions;
+  return trackers as unknown as TrackerDefinition[];
 }
 
-export async function loadGroundTruth(
-  personaId: string,
-): Promise<GroundTruth | null> {
-  try {
-    const raw = await readFile(
-      path.join(datasetRoot, "ground_truth", `${personaId}.json`),
-      "utf8",
-    );
-    return JSON.parse(raw) as GroundTruth;
-  } catch {
-    return null;
-  }
+export async function loadGroundTruth(personaId: string): Promise<GroundTruth | null> {
+  const truth = await getDb()
+    .collection("groundTruth")
+    .findOne({ personaId }, { projection: { _id: 0 } });
+
+  return (truth as unknown as GroundTruth | null) ?? null;
 }
