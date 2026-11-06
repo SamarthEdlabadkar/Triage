@@ -11,13 +11,16 @@ export default async function Page({
   const params = await searchParams;
   const initialPage: PageId = params.page === "records" || params.page === "summary" ? params.page : "overview";
   const files = await listPatientFiles();
+  const sourceFiles = files.filter((file) => !file.startsWith("demo-"));
+  const uncoveredModules = ["demo-mood.json", "demo-adverse.json", "demo-diabetes.json"];
+  const selectableFiles = [...sourceFiles, ...uncoveredModules.filter((file) => files.includes(file))];
   const patients: PatientChoice[] = [];
 
-  for (const file of files) {
+  for (const file of selectableFiles) {
     const document = await loadPatient(file);
     patients.push({
       file,
-      name: document.displayName,
+      name: file.startsWith("demo-") ? `${document.displayName} — ${document.assignedTrackers[0]?.trackerName ?? "Tracker"} demo` : document.displayName,
       trackers: document.assignedTrackers.map((tracker) => ({
         id: tracker.trackerId,
         name: tracker.trackerName,
@@ -25,7 +28,7 @@ export default async function Page({
     });
   }
 
-  const file = params.patient && files.includes(params.patient) ? params.patient : files[0];
+  const file = params.patient && selectableFiles.includes(params.patient) ? params.patient : selectableFiles[0];
   const patient = await loadPatient(file);
   const trackers = await loadTrackersForPatient(patient);
   const tracker = trackers.find((item) => item.trackerId === params.tracker) ?? trackers[0];

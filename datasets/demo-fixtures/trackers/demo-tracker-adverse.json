@@ -1,0 +1,20 @@
+{
+  "trackerId": "demo-tracker-adverse",
+  "name": "Adverse Event Reporter",
+  "condition": "Adverse event",
+  "version": 1,
+  "questions": [
+    {
+      "questionId": "demo-adverse-event",
+      "metricKey": "event",
+      "text": "What happened?",
+      "type": "text"
+    },
+    {
+      "questionId": "demo-adverse-impact",
+      "metricKey": "impact",
+      "text": "How much did it affect your day?",
+      "type": "radio"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "trackerId": "demo-tracker-mood",
+  "name": "Mood Check-In",
+  "condition": "Mood",
+  "version": 1,
+  "questions": [
+    {
+      "questionId": "demo-mood-feeling",
+      "metricKey": "feeling",
+      "text": "How are you feeling today?",
+      "type": "radio"
+    },
+    {
+      "questionId": "demo-mood-energy",
+      "metricKey": "energy",
+      "text": "Energy today (1–5)",
+      "type": "scale"
+    }
+  ]
+}

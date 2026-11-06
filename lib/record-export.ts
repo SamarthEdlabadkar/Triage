@@ -27,6 +27,7 @@ export function buildRecordsExport({
   rangeLabel,
   dailyMedName,
   showFeeling,
+  showSymptoms,
   showMed,
   showFev1,
   shown,
@@ -38,6 +39,7 @@ export function buildRecordsExport({
   rangeLabel: string;
   dailyMedName: string | null;
   showFeeling: boolean;
+  showSymptoms: boolean;
   showMed: boolean;
   showFev1: boolean;
   shown: DayView[];
@@ -46,7 +48,7 @@ export function buildRecordsExport({
   const headers = [
     "Date",
     ...(showFeeling ? ["Feeling"] : []),
-    "Symptoms",
+    showSymptoms ? "Symptoms" : "Reported answers",
     ...(showMed ? [`Daily med${dailyMedName ? ` (${dailyMedName})` : ""}`] : []),
     ...(showFev1 ? ["FEV1"] : []),
     "Entries",
@@ -54,7 +56,7 @@ export function buildRecordsExport({
   const rows = shown.map((day) => [
     `${day.dow} ${day.short}`,
     ...(showFeeling ? [day.feeling ?? "—"] : []),
-    day.logged ? day.symptoms.join(", ") || "None" : "—",
+    showSymptoms ? (day.logged ? day.symptoms.join(", ") || "None" : "—") : (day.submissions.filter((submission) => !submission.blank).at(-1)?.lines.join("; ") || "—"),
     ...(showMed ? [medText(day)] : []),
     ...(showFev1 ? [day.fev1 == null ? "—" : `${day.fev1.toFixed(2)} L${day.fevOk ? "" : " · flagged"}`] : []),
     String(day.entries),

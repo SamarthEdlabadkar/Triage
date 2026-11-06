@@ -35,14 +35,14 @@ export function TimelineWidget({ model, chart, onOpen }: { model: ClinicianModel
               return <button key={day.date} type="button" onClick={() => onOpen(index)} style={{ height: 16, borderRadius: 999, background: !day.active || !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)", border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)", opacity: day.active ? 1 : 0.35 }} />;
             })}
           </Row>
-          <Row label="Symptoms">
+          {days.some((day) => day.symptoms.length || day.headache !== null) ? <Row label="Symptoms">
             {days.map((day, index) => (
               <button key={day.date} type="button" title={day.symptoms.join(", ")} onClick={() => onOpen(index)} style={{ display: "grid", placeItems: "center", height: 28 }}>
                 <span style={{ width: day.logged ? 6 + day.symptoms.length * 4 : 8, height: day.logged ? 6 + day.symptoms.length * 4 : 8, borderRadius: "50%", background: !day.logged ? "transparent" : day.symptoms.length ? "var(--color-accent-500)" : "var(--color-neutral-400)", border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)" }} />
               </button>
             ))}
-          </Row>
-          {model.patient.kind !== "ibd" ? (
+          </Row> : null}
+          {days.some((day) => day.rescue != null) ? (
             <Row label={model.patient.kind === "asthma" ? "Rescue units" : "As-needed units"}>
               {days.map((day, index) => (
                 <button key={day.date} type="button" onClick={() => onOpen(index)} style={{ height: "100%", display: "flex", alignItems: "end" }}>
@@ -51,7 +51,7 @@ export function TimelineWidget({ model, chart, onOpen }: { model: ClinicianModel
               ))}
             </Row>
           ) : null}
-          <Row label={model.dailyMedName ? "Daily med" : "Daily med"}>
+          {model.dailyMedName ? <Row label="Daily med">
             {days.map((day, index) => (
               <button key={day.date} type="button" onClick={() => onOpen(index)} style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "center" }}>
                 {(day.slots.length ? day.slots : ["open" as const]).map((slot, slotIndex) => {
@@ -60,8 +60,8 @@ export function TimelineWidget({ model, chart, onOpen }: { model: ClinicianModel
                 })}
               </button>
             ))}
-          </Row>
-          {model.patient.kind === "asthma" ? (
+          </Row> : null}
+          {model.patient.kind === "asthma" && days.some((day) => day.fev1 != null) ? (
             <div className="tl-row">
               <div className="tl-label">FEV1</div>
               <div style={{ position: "relative", height: 90 }}>

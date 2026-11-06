@@ -10,7 +10,8 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
   const [exportError, setExportError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const days = [...model.days].reverse().filter((day) => day.entries > 0);
-  const showFeeling = days.some((day) => Boolean(day.feeling));
+  const showFeeling = ["asthma", "migraine", "ibd"].includes(model.patient.kind) && days.some((day) => Boolean(day.feeling));
+  const showSymptoms = ["asthma", "migraine", "ibd"].includes(model.patient.kind);
   const showMed = Boolean(model.dailyMedName) && days.some((day) => day.slots.length > 0);
   const showFev1 = days.some((day) => day.fev1 != null);
   const feelings = [...new Set(days.map((day) => day.feeling).filter((value): value is string => Boolean(value)))].sort();
@@ -27,7 +28,7 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
   const activeFilters = [
     filters.date,
     showFeeling && filters.feeling,
-    filters.symptoms,
+    showSymptoms && filters.symptoms,
     showMed && filters.med,
     showFev1 && filters.fev1,
     showFev1 && filters.fev1Min,
@@ -41,7 +42,7 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
     const fev1Status = day.fev1 == null ? "missing" : day.fevOk ? "passed" : "flagged";
     return `${day.dow} ${day.short}`.toLowerCase().includes(filters.date.toLowerCase())
       && (!showFeeling || !filters.feeling || (day.feeling ?? "none") === filters.feeling)
-      && (day.symptoms.join(", ") || "none").toLowerCase().includes(filters.symptoms.toLowerCase())
+      && (!showSymptoms || (day.symptoms.join(", ") || "none").toLowerCase().includes(filters.symptoms.toLowerCase()))
       && (!showMed || !filters.med || medStatus === filters.med)
       && (!showFev1 || !filters.fev1 || fev1Status === filters.fev1)
       && (!showFev1 || fev1Min === null || (day.fev1 != null && day.fev1 >= fev1Min))
@@ -56,6 +57,7 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
     rangeLabel: model.rangeLabel,
     dailyMedName: model.dailyMedName,
     showFeeling,
+    showSymptoms,
     showMed,
     showFev1,
     shown: filteredDays,
@@ -80,7 +82,7 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
         <h3 style={{ margin: 0, fontSize: 21 }}>Daily records</h3>
-        <span className="muted" style={{ fontSize: 13 }}>Select a row for submissions, doses, and spirometer blows</span>
+        <span className="muted" style={{ fontSize: 13 }}>Select a row for its reported details</span>
         <div className="records-downloads">
           <button className="btn btn-secondary" type="button" aria-label="Download the records in this table as CSV" disabled={exporting !== null} onClick={() => saveTable("csv")}>CSV</button>
           <button className="btn btn-secondary" type="button" aria-label="Download the records in this table as Excel" disabled={exporting !== null} onClick={() => saveTable("excel")}>{exporting === "excel" ? "Excel…" : "Excel"}</button>
@@ -106,10 +108,10 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
                 </select>
               </label>
             ) : null}
-            <label>
+            {showSymptoms ? <label>
               Symptoms
               <input aria-label="Filter by symptoms" value={filters.symptoms} onChange={(event) => setFilter("symptoms", event.target.value)} placeholder="Search symptoms" />
-            </label>
+            </label> : null}
             {showMed ? (
               <label>
                 Daily med
@@ -165,7 +167,7 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
             <tr role="row">
               <th role="columnheader" className="rec-date">Date</th>
               {showFeeling ? <th role="columnheader" className="rec-feeling">Feeling</th> : null}
-              <th role="columnheader" className="rec-symptoms">Symptoms</th>
+              <th role="columnheader" className="rec-symptoms">{showSymptoms ? "Symptoms" : "Reported answers"}</th>
               {showMed ? (
                 <th role="columnheader" className="rec-med">
                   Daily med
@@ -197,7 +199,7 @@ export function RecordsTab({ model, onOpen }: { model: ClinicianModel; onOpen: (
                   <td role="cell" className="rec-feeling" data-label="Feeling">{day.feeling ?? "—"}</td>
                 ) : null}
                 <td role="cell" className="rec-symptoms rec-wide" data-label="Symptoms">
-                  {day.logged ? day.symptoms.join(", ") || "None" : "—"}
+                  {showSymptoms ? (day.logged ? day.symptoms.join(", ") || "None" : "—") : (day.submissions.filter((submission) => !submission.blank).at(-1)?.lines.join(" · ") || "—")}
                 </td>
                 {showMed ? (
                   <td

@@ -18,7 +18,7 @@ function href(file: string, page: PageId, trackerId?: string) {
 }
 
 export function ClinicianNav({
-  model, patients, page, audience, selectedViewId, views, onPageChange, onViewChange, onCustomize,
+  model, patients, page, audience, selectedViewId, views, downloadingOverview, downloadError, onDownloadOverview, onPageChange, onViewChange, onCustomize,
 }: {
   model: ClinicianModel;
   patients: PatientChoice[];
@@ -26,6 +26,9 @@ export function ClinicianNav({
   audience: Audience;
   selectedViewId: string;
   views: SpecialistView[];
+  downloadingOverview: boolean;
+  downloadError: string;
+  onDownloadOverview: () => void;
   onPageChange: (page: PageId) => void;
   onViewChange: (audience: Audience, viewId: string) => void;
   onCustomize: () => void;
@@ -70,6 +73,13 @@ export function ClinicianNav({
       </nav>
 
       <div className="layout-tools" role="group" aria-label="Overview layout">
+        {page === "overview" && audience === "clinician" ? (
+          <button className="btn btn-secondary overview-download" type="button" aria-label="Download overview as PDF" title="Download overview as PDF" disabled={downloadingOverview} onClick={onDownloadOverview}>
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3" /></svg>
+            <span>{downloadingOverview ? "Downloading…" : "Download"}</span>
+          </button>
+        ) : null}
+        {page === "overview" && audience === "clinician" && downloadError ? <span role="alert" className="muted" style={{ fontSize: 12 }}>{downloadError}</span> : null}
         <span className="muted" style={{ fontSize: 12 }}>View</span>
         {(["clinician", "patient"] as const).map((id) => {
           const active = audience === id && (id === "patient" || selectedViewId === "general");

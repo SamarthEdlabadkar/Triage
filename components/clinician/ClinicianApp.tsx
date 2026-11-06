@@ -6,12 +6,14 @@ import { buildChart } from "./chart";
 import { ClinicianNav } from "./ClinicianNav";
 import { CustomizeViews } from "./CustomizeViews";
 import { DayDrawer } from "./shared/DayDrawer";
+import { downloadOverviewPdf } from "./shared/overview-download";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { RecordsTab } from "./tabs/RecordsTab";
 import { SummaryTab } from "./tabs/SummaryTab";
 import {
   GENERAL_MODULES,
   STORAGE_KEY,
+  moduleAvailable,
   readSpecialistViews,
   type Audience,
   type PageId,
@@ -27,6 +29,8 @@ export function ClinicianApp({ model, patients, initialPage = "overview" }: { mo
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showQ, setShowQ] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [downloadingOverview, setDownloadingOverview] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
 
   const days = model.days;
   const chart = useMemo(() => buildChart(days), [days]);
@@ -65,6 +69,15 @@ export function ClinicianApp({ model, patients, initialPage = "overview" }: { mo
     setCustomOpen(false);
   }
 
+  function downloadOverview() {
+    setDownloadError("");
+    setDownloadingOverview(true);
+    const visible = modules.filter((id) => moduleAvailable(id, model));
+    void downloadOverviewPdf(model, visible, selectedSpecialistView?.name ?? "General")
+      .catch(() => setDownloadError("Overview PDF could not be created."))
+      .finally(() => setDownloadingOverview(false));
+  }
+
   return (
     <div className="shell">
       <ClinicianNav
@@ -74,6 +87,9 @@ export function ClinicianApp({ model, patients, initialPage = "overview" }: { mo
         audience={audience}
         selectedViewId={selectedViewId}
         views={specialistViews}
+        downloadingOverview={downloadingOverview}
+        downloadError={downloadError}
+        onDownloadOverview={downloadOverview}
         onPageChange={(next) => { setPage(next); setSelectedDate(null); }}
         onViewChange={(nextAudience, viewId) => { setAudience(nextAudience); setSelectedViewId(viewId); setPage("overview"); }}
         onCustomize={() => setCustomOpen(true)}
@@ -86,7 +102,6 @@ export function ClinicianApp({ model, patients, initialPage = "overview" }: { mo
             chart={chart}
             audience={audience}
             modules={modules}
-            viewName={selectedSpecialistView?.name ?? "General"}
             showQ={showQ}
             onToggleQuality={() => setShowQ((value) => !value)}
             onOpenDay={openDay}
@@ -116,7 +131,7 @@ export function ClinicianApp({ model, patients, initialPage = "overview" }: { mo
         <CustomizeViews
           views={specialistViews}
           activeView={audience === "clinician" ? selectedSpecialistView ?? null : null}
-          kind={model.patient.kind}
+          model={model}
           onClose={() => setCustomOpen(false)}
           onSave={saveView}
         />

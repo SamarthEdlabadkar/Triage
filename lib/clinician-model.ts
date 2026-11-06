@@ -14,7 +14,7 @@ const WINDOW = 28;
 const TZ = "America/New_York";
 const NONE = /none of these/i;
 
-export type Kind = "asthma" | "migraine" | "ibd";
+export type Kind = "asthma" | "migraine" | "ibd" | "mood" | "adverse" | "medication" | "diabetes";
 export type Slot = "taken" | "open";
 
 export type Blow = {
@@ -207,6 +207,10 @@ function kindOf(tracker: TrackerDefinition): Kind {
   const name = tracker.condition.toLowerCase();
   if (name.includes("migraine")) return "migraine";
   if (name.includes("ibd")) return "ibd";
+  if (name.includes("diabetes")) return "diabetes";
+  if (name.includes("adverse")) return "adverse";
+  if (name.includes("mood")) return "mood";
+  if (name.includes("medication")) return "medication";
   return "asthma";
 }
 
@@ -214,7 +218,8 @@ function matchesCondition(med: Medication, kind: Kind) {
   const text = med.relatedCondition.toLowerCase();
   if (kind === "asthma") return text.includes("asthma");
   if (kind === "migraine") return text.includes("migraine");
-  return /ibd|crohn|colitis/.test(text);
+  if (kind === "ibd") return /ibd|crohn|colitis/.test(text);
+  return text.includes(kind);
 }
 
 function question(tracker: TrackerDefinition, key: string) {
@@ -531,7 +536,7 @@ export function buildClinicianModel(
       blanks: submissions.filter(blankSubmission).length,
       feeling,
       symptoms,
-      rescue: active && (logged || rescueEvents.length) ? rescue : null,
+      rescue: rescueMeds.length && active && (logged || rescueEvents.length) ? rescue : null,
       slots,
       fev1: best?.fvcPlusResults?.fev1 ?? null,
       fev1Pct: best?.fvcPlusResults?.fev1PercentPredicted ?? null,
@@ -623,7 +628,7 @@ export function buildClinicianModel(
       day: null,
       view: "timeline",
     });
-  } else {
+  } else if (kind === "ibd") {
     cards.push({
       kicker: "Symptom days",
       value: String(symptomDays(days)),
@@ -634,22 +639,29 @@ export function buildClinicianModel(
       day: null,
       view: "timeline",
     });
+  } else {
+    cards.push({
+      kicker: "Days reported",
+      value: String(loggedCount(days)),
+      unit: `/ ${activeDays.length} active days`,
+      line: `Latest entry: ${loggedDays.at(-1)?.short ?? "none"}`,
+      note: "Missing days have no inferred status.",
+      bar: null, day: null, view: null,
+    });
   }
 
-  cards.push({
-    kicker: dailyMeds.length ? "Daily medication reported taken" : "Daily medication",
+  if (dailyMeds.length) cards.push({
+    kicker: "Daily medication reported taken",
     value: allDoses.pct == null ? "—" : `${allDoses.pct}%`,
-    unit: allDoses.n ? `of ${allDoses.n} doses` : "none scheduled",
-    line: allDoses.n
-      ? `${allDoses.taken} marked · ${allDoses.open} not marked`
-      : "No daily medication for this tracker",
+    unit: "",
+    line: allDoses.n ? "Patient-reported scheduled administrations" : "No scheduled administrations in this window",
     note: "Self-reported. Not marked is not the same as a skipped dose.",
-    bar: allDoses.n ? { taken: allDoses.taken, rest: allDoses.open } : null,
+    bar: null,
     day: null,
     view: null,
   });
 
-  if (kind === "asthma") {
+  if (kind === "asthma" && days.some((day) => day.fev1 != null)) {
     cards.push({
       kicker: "Lung function · device",
       value: latest ? latest.fev1!.toFixed(2) : "—",
@@ -662,7 +674,7 @@ export function buildClinicianModel(
       day: latest ? days.indexOf(latest) : null,
       view: null,
     });
-  } else if (kind === "migraine") {
+  } else if (kind === "migraine" && days.some((day) => day.pain != null)) {
     const pain = painMean(days);
     cards.push({
       kicker: "Pain on headache days",
@@ -674,7 +686,7 @@ export function buildClinicianModel(
       day: null,
       view: "timeline",
     });
-  } else {
+  } else if (kind === "ibd" && days.some((day) => day.pain != null)) {
     const pain = bellyMean(days);
     cards.push({
       kicker: "Belly pain",
@@ -685,6 +697,17 @@ export function buildClinicianModel(
       bar: null,
       day: null,
       view: "timeline",
+    });
+  } else if (kind !== "asthma" && kind !== "migraine" && kind !== "ibd") {
+    const recent = loggedDays.at(-1);
+    const latestAnswer = recent?.submissions.filter((submission) => !submission.blank).at(-1)?.lines[0];
+    if (recent && latestAnswer) cards.push({
+      kicker: "Latest report",
+      value: recent.short,
+      unit: "",
+      line: latestAnswer,
+      note: "Patient-reported; open the day for all answers.",
+      bar: null, day: days.indexOf(recent), view: null,
     });
   }
 
@@ -732,7 +755,7 @@ export function buildClinicianModel(
     pushChange("Headache days", pct(headDays(before), loggedCount(before)), pct(headDays(after), loggedCount(after)), "% of logged days", "down", 10, after.find((day) => day.headache));
     pushChange("Pain on headache days", painMean(before), painMean(after), " / 10", "down", 1, after.find((day) => day.pain != null));
     pushChange("Daily doses marked", beforeDoses.pct, afterDoses.pct, "%", "up", 10, after.find((day) => day.slots.includes("taken")));
-  } else {
+  } else if (kind === "ibd") {
     pushChange("Symptom days", pct(symptomDays(before), loggedCount(before)), pct(symptomDays(after), loggedCount(after)), "% of logged days", "down", 10, after.find((day) => day.symptoms.length));
     pushChange("Belly pain", bellyMean(before), bellyMean(after), " / 10", "down", 1, after.find((day) => day.pain != null));
     pushChange("Daily doses marked", beforeDoses.pct, afterDoses.pct, "%", "up", 10, after.find((day) => day.slots.includes("taken")));
@@ -762,7 +785,7 @@ export function buildClinicianModel(
   } else if (kind === "migraine") {
     addCompare("Headache days", "% of logged days", pct(headDays(before), loggedCount(before)), pct(headDays(after), loggedCount(after)), "%", 100);
     addCompare("Pain", "mean on headache days", painMean(before), painMean(after), "", 10);
-  } else {
+  } else if (kind === "ibd") {
     addCompare("Symptom days", "% of logged days", pct(symptomDays(before), loggedCount(before)), pct(symptomDays(after), loggedCount(after)), "%", 100);
     addCompare("Belly pain", "mean on logged days", bellyMean(before), bellyMean(after), "", 10);
   }
@@ -813,7 +836,7 @@ export function buildClinicianModel(
       sev: "Gap",
       tone: "muted",
       title: `No entries for ${bestRun} days in a row`,
-      detail: `${days[bestEnd - bestRun + 1].short} – ${days[bestEnd].short}. Doses on those days are not marked, not confirmed missed.`,
+      detail: `${days[bestEnd - bestRun + 1].short} – ${days[bestEnd].short}.${dailyMeds.length ? " Doses on those days are not marked, not confirmed missed." : " No status is inferred from missing entries."}`,
       day: bestEnd - bestRun + 1,
     });
   }
@@ -866,28 +889,34 @@ export function buildClinicianModel(
       title: "Symptoms",
       text: `Reported on ${symptomDays(days)} of ${loggedCount(days)} logged days. Most reported: ${top.slice(0, 4).map((item) => `${item[0]} (${item[1]})`).join(", ") || "none"}.`,
     });
-    summary.push({
+    if (rescueMeds.length) summary.push({
       title: "Rescue medication",
-      text: `${rescueSum(days)} units recorded on as-needed medications (${rescueMeds.map((med) => med.name).join(", ") || "none"}).`,
+      text: `${rescueSum(days)} units recorded on as-needed medications (${rescueMeds.map((med) => med.name).join(", ")}).`,
     });
   } else if (kind === "migraine") {
     summary.push({
       title: "Headaches",
       text: `${headDays(days)} of ${loggedCount(days)} logged days. Mean worst pain ${round1(painMean(days))} / 10.`,
     });
-  } else {
+  } else if (kind === "ibd") {
     summary.push({
       title: "Symptoms",
       text: `Symptom checkboxes on ${symptomDays(days)} of ${loggedCount(days)} logged days. Blood other than “None” on ${bloodDays} days. Mean belly pain ${round1(bellyMean(days))} / 10.`,
     });
+  } else {
+    const latest = loggedDays.at(-1);
+    if (latest) summary.push({
+      title: tracker.name,
+      text: `Latest reported answers on ${latest.short}: ${latest.submissions.filter((submission) => !submission.blank).at(-1)?.lines.join("; ") || "none"}.`,
+    });
   }
-  summary.push({
+  if (dailyMeds.length) summary.push({
     title: "Medication",
     text: allDoses.n
       ? `${dailyMeds.map((med) => med.name).join(", ")}: ${allDoses.taken} of ${allDoses.n} scheduled daily doses have a recorded administration (${allDoses.pct}%). ${allDoses.open} have no record. These are self-reports.`
       : "No daily medication is scheduled for this tracker.",
   });
-  if (kind === "asthma") {
+  if (kind === "asthma" && readings.length) {
     summary.push({
       title: "Lung function",
       text: reliable.length
@@ -970,12 +999,12 @@ export function buildClinicianModel(
             "What was the pain like?",
             "Which entries conflict or have gaps?",
           ]
-        : [
+        : kind === "ibd" ? [
             "Is the daily medication being marked?",
             "How often were symptoms reported?",
             "Was blood reported?",
             "Which entries conflict or have gaps?",
-          ];
+          ] : ["What was reported most recently?", "Which days have no entries?", "Are there repeated or conflicting answers?"];
 
   const parts = patient.displayName.split(/\s+/).filter(Boolean);
   const initials = parts.map((part) => part[0]).join("").slice(0, 2).toUpperCase();
@@ -996,7 +1025,7 @@ export function buildClinicianModel(
     rangeLabel: `${short(start)} – ${short(END)} · ${WINDOW} days`,
     lastEntry: lastSubmission ? `Last entry ${short(nyDate(lastSubmission.submittedAt))}, ${nyTime(lastSubmission.submittedAt)}` : "No entries",
     aggregationNote:
-      "Window is Oct 9–Nov 5, 2026. One answer per question is the last non-blank submission that day. Checkboxes are the union of the day. Yes/no is any Yes. Numbers are the daily maximum. Device times are America/New_York. Doses are administrations recorded on the log day.",
+      "Window is Oct 9–Nov 5, 2026. Review panels use the last non-blank answer per question each day; checkboxes are the union, yes/no is any Yes, and numeric review measures use the daily maximum. Tracker cards show the latest completed submission for each displayed day. Device times are America/New_York. Doses are administrations recorded on the log day.",
     scenario: truth?.clinician30s ?? null,
     dailyMedName: primary?.name ?? null,
     otherMeds: otherMeds.length

@@ -36,16 +36,15 @@ export function DayDrawer({ day, fromRecords, onClose, onPrev, onNext }: {
             </div>
           ))}
         </section>
-        <section>
+        {day.doses.length ? <section>
           <h4 style={{ margin: "0 0 8px", fontSize: 17 }}>Medication</h4>
-          {day.doses.length === 0 ? <div className="muted">No scheduled medication to show.</div> : null}
           {day.doses.map((dose) => (
             <div key={`${dose.name}-${dose.slot}`} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 14px", borderRadius: 16, background: "var(--color-surface)", marginBottom: 8, fontSize: 13 }}>
               <div style={{ flex: 1 }}><div style={{ fontWeight: 700 }}>{dose.name}</div><div className="muted">{dose.slot}</div></div>
               <span className={`tag ${dose.tone === "good" ? "tag-accent-2" : dose.tone === "warn" ? "tag-accent" : "tag-neutral"}`}>{dose.status}</span>
             </div>
           ))}
-        </section>
+        </section> : null}
         {day.blows.length ? (
           <section>
             <h4 style={{ margin: "0 0 8px", fontSize: 17 }}>Spirometer blows</h4>

@@ -1,0 +1,21 @@
+{
+  "trackerId": "demo-tracker-diabetes",
+  "name": "Diabetes Tracker",
+  "condition": "Diabetes",
+  "version": 1,
+  "questions": [
+    {
+      "questionId": "demo-diabetes-glucose",
+      "metricKey": "glucose",
+      "text": "Reported glucose (mg/dL)",
+      "type": "number",
+      "unit": "mg/dL"
+    },
+    {
+      "questionId": "demo-diabetes-feeling",
+      "metricKey": "feeling",
+      "text": "How are you feeling today?",
+      "type": "radio"
+    }
+  ]
+}

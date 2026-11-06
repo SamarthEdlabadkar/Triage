@@ -104,8 +104,9 @@
 .records-filter-panel { font-size: 12px; }
 .records-filter-panel summary { cursor: pointer; font-weight: 700; list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--color-divider); border-radius: 9px; background: var(--color-neutral-100); }
 .records-filter-panel summary::-webkit-details-marker { display: none; }
-.records-filter-panel summary::after { content: "⌄"; font-size: 15px; line-height: 0.7; }
-.records-filter-panel[open] summary::after { transform: rotate(180deg); }
+.records-filter-panel summary::marker { content: ""; }
+.records-filter-panel summary::after { content: ""; width: 7px; height: 7px; margin: -3px 2px 0 3px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .15s ease, margin .15s ease; }
+.records-filter-panel[open] summary::after { transform: rotate(225deg); margin-top: 3px; }
 .records-filter-panel[open] { flex-basis: 100%; }
 .records-filters {
   display: grid;
@@ -143,7 +144,17 @@
 
 .span-12 { flex: 0 0 100%; min-width: 0; }
 .span-6 { flex: 0 1 calc((100% - 20px) / 2); min-width: 0; display: flex; }
-.span-6 > .card { flex: 1; min-height: 320px; justify-content: center; }
+.span-6 > .card { flex: 1; box-sizing: border-box; min-height: 400px; justify-content: center; }
+.overview-download { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
+.tracker-widget { display: flex; flex-direction: column; gap: 14px; }
+.tracker-widget h3 { margin: 0; font-size: 21px; }
+.tracker-widget .muted { margin: 5px 0 0; font-size: 13px; }
+.tracker-entries { display: grid; gap: 7px; }
+.tracker-entry { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: start; text-align: left; padding: 8px 10px; }
+.tracker-entry span { font-size: 13px; line-height: 1.4; }
+.tracker-empty { margin: 0; padding-top: 10px; border-top: 1px solid var(--color-divider); color: var(--color-neutral-700); font-size: 13px; line-height: 1.4; }
+.module-group { display: grid; gap: 8px; }
+.module-group h3 { margin: 6px 0 0; font-size: 14px; }
 
 .card {
   background: var(--color-surface);

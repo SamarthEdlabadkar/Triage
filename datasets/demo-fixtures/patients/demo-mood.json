@@ -1,0 +1,131 @@
+{
+  "id": "demo-patient-mood",
+  "personaId": "demo-mood",
+  "studyId": "DEMO-MOOD",
+  "displayName": "Avery",
+  "age": 16,
+  "sex": "Not specified",
+  "dateOfBirth": "",
+  "enrolledDate": "2026-10-09",
+  "assignedTrackers": [
+    {
+      "trackerId": "demo-tracker-mood",
+      "trackerName": "Mood Check-In",
+      "assignedDate": "2026-10-09"
+    }
+  ],
+  "medications": [],
+  "medicalDevices": [],
+  "dailyLogs": [
+    {
+      "day": "2026-10-10",
+      "allMedicationsAdministered": false,
+      "trackerResponses": [
+        {
+          "trackerId": "demo-tracker-mood",
+          "trackerVersion": 1,
+          "submittedAt": "2026-10-10T17:00:00Z",
+          "responses": [
+            {
+              "questionId": "demo-mood-feeling",
+              "value": "Okay"
+            },
+            {
+              "questionId": "demo-mood-energy",
+              "value": "3"
+            }
+          ]
+        }
+      ],
+      "medicationAdministrations": []
+    },
+    {
+      "day": "2026-10-15",
+      "allMedicationsAdministered": false,
+      "trackerResponses": [
+        {
+          "trackerId": "demo-tracker-mood",
+          "trackerVersion": 1,
+          "submittedAt": "2026-10-15T17:00:00Z",
+          "responses": [
+            {
+              "questionId": "demo-mood-feeling",
+              "value": "Low"
+            },
+            {
+              "questionId": "demo-mood-energy",
+              "value": "2"
+            }
+          ]
+        }
+      ],
+      "medicationAdministrations": []
+    },
+    {
+      "day": "2026-10-22",
+      "allMedicationsAdministered": false,
+      "trackerResponses": [
+        {
+          "trackerId": "demo-tracker-mood",
+          "trackerVersion": 1,
+          "submittedAt": "2026-10-22T17:00:00Z",
+          "responses": [
+            {
+              "questionId": "demo-mood-feeling",
+              "value": "Okay"
+            },
+            {
+              "questionId": "demo-mood-energy",
+              "value": "3"
+            }
+          ]
+        }
+      ],
+      "medicationAdministrations": []
+    },
+    {
+      "day": "2026-10-29",
+      "allMedicationsAdministered": false,
+      "trackerResponses": [
+        {
+          "trackerId": "demo-tracker-mood",
+          "trackerVersion": 1,
+          "submittedAt": "2026-10-29T17:00:00Z",
+          "responses": [
+            {
+              "questionId": "demo-mood-feeling",
+              "value": "Good"
+            },
+            {
+              "questionId": "demo-mood-energy",
+              "value": "4"
+            }
+          ]
+        }
+      ],
+      "medicationAdministrations": []
+    },
+    {
+      "day": "2026-11-05",
+      "allMedicationsAdministered": false,
+      "trackerResponses": [
+        {
+          "trackerId": "demo-tracker-mood",
+          "trackerVersion": 1,
+          "submittedAt": "2026-11-05T17:00:00Z",
+          "responses": [
+            {
+              "questionId": "demo-mood-feeling",
+              "value": "Low"
+            },
+            {
+              "questionId": "demo-mood-energy",
+              "value": "2"
+            }
+          ]
+        }
+      ],
+      "medicationAdministrations": []
+    }
+  ]
+}
