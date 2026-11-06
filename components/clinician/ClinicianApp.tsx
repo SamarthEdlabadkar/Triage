@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import {
   answerQuestion,
@@ -337,6 +337,29 @@ export function ClinicianApp({
   );
 }
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function dayMarked(day: DayView) {
+  return day.symptoms.length > 0 || day.headache === true;
+}
+
+function dayMarkStyle(day: DayView): CSSProperties {
+  const marked = dayMarked(day);
+  return {
+    background: !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)",
+    border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)",
+    color: !day.logged ? "var(--color-neutral-800)" : marked ? "var(--color-accent-900)" : "var(--color-bg)",
+    opacity: day.active ? 1 : 0.35,
+  };
+}
+
+function dayMarkLabel(day: DayView) {
+  if (!day.active) return "before this tracker was assigned";
+  if (!day.logged) return "no entry";
+  if (dayMarked(day)) return day.headache ? "headache or symptoms reported" : "symptoms reported";
+  return "logged without symptoms or headache";
+}
+
 function Snapshot({ model, onOpen, onTimeline }: { model: ClinicianModel; onOpen: (index: number | null) => void; onTimeline: () => void }) {
   return (
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -344,8 +367,8 @@ function Snapshot({ model, onOpen, onTimeline }: { model: ClinicianModel; onOpen
         <h3 style={{ margin: 0, fontSize: 21 }}>30-second snapshot</h3>
         <span className="muted" style={{ fontSize: 13 }}>Patient-reported unless noted · open a figure for that day</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
-        {model.cards.map((card) => (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12, alignItems: "start" }}>
+        {model.cards.filter((card) => card.kicker !== "Data gaps").map((card) => (
           <button
             key={card.kicker}
             type="button"
@@ -367,9 +390,55 @@ function Snapshot({ model, onOpen, onTimeline }: { model: ClinicianModel; onOpen
             <div style={{ fontSize: 12, color: "var(--color-accent-2-800)", fontWeight: 700, marginTop: 4 }}>{card.note}</div>
           </button>
         ))}
+        <MonthCalendar days={model.days} onOpen={onOpen} />
       </div>
       <DayStrip days={model.days} onOpen={onOpen} />
     </article>
+  );
+}
+
+function MonthCalendar({ days, onOpen }: { days: DayView[]; onOpen: (index: number) => void }) {
+  const start = Math.max(0, WEEKDAYS.indexOf(days[0]?.dow ?? "Sun"));
+  const cells: Array<DayView | null> = [...Array.from({ length: start }, () => null), ...days];
+  while (cells.length % 7) cells.push(null);
+
+  return (
+    <div style={{ background: "var(--color-neutral-100)", borderRadius: 22, padding: "16px 14px", display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
+      <div>
+        <div className="kicker">Calendar</div>
+        <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{days[0]?.short} – {days[days.length - 1]?.short}</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 3, minWidth: 0 }}>
+        {WEEKDAYS.map((label) => (
+          <div key={label} className="faint" style={{ textAlign: "center", fontSize: 10, fontWeight: 700 }}>{label.slice(0, 1)}</div>
+        ))}
+        {cells.map((day, index) => day ? (
+          <button
+            key={day.date}
+            type="button"
+            title={`${day.short} · ${dayMarkLabel(day)}`}
+            aria-label={`${day.long}. ${dayMarkLabel(day)}`}
+            onClick={() => onOpen(days.findIndex((item) => item.date === day.date))}
+            style={{
+              aspectRatio: "1",
+              width: "100%",
+              minWidth: 0,
+              borderRadius: 8,
+              cursor: "pointer",
+              font: "600 11px var(--font-body)",
+              padding: 0,
+              boxSizing: "border-box",
+              ...dayMarkStyle(day),
+              border: day.logged ? "1.5px solid transparent" : "1.5px dashed var(--color-neutral-500)",
+            }}
+          >
+            {day.num}
+          </button>
+        ) : (
+          <div key={`pad-${index}`} aria-hidden="true" />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -381,25 +450,22 @@ function DayStrip({ days, onOpen }: { days: DayView[]; onOpen: (index: number) =
         <span>Filled = symptoms or headache · pale = logged without those · dashed = no entry</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`, gap: 3 }}>
-        {days.map((day, index) => {
-          const marked = day.symptoms.length > 0 || day.headache === true;
-          return (
-            <button
-              key={day.date}
-              type="button"
-              title={`${day.short}${day.logged ? "" : " · no entry"}`}
-              onClick={() => onOpen(index)}
-              style={{
-                height: 22,
-                borderRadius: 999,
-                cursor: "pointer",
-                background: !day.logged ? "transparent" : marked ? "var(--color-accent-500)" : "var(--color-accent-2-500)",
-                border: day.logged ? "0" : "1.5px dashed var(--color-neutral-500)",
-                opacity: day.active ? 1 : 0.35,
-              }}
-            />
-          );
-        })}
+        {days.map((day, index) => (
+          <button
+            key={day.date}
+            type="button"
+            title={`${day.short} · ${dayMarkLabel(day)}`}
+            aria-label={`${day.long}. ${dayMarkLabel(day)}`}
+            onClick={() => onOpen(index)}
+            style={{
+              height: 22,
+              borderRadius: 999,
+              cursor: "pointer",
+              padding: 0,
+              ...dayMarkStyle(day),
+            }}
+          />
+        ))}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }} className="faint">
         <span>{days[0].short}</span>
