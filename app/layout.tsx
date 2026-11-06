@@ -19,7 +19,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "SMART@Home · Clinician view",
   description:
-    "Liquid-glass clinician dashboard for patient-reported SMART@Home monitoring data.",
+    "Clinician view of patient-reported SMART@Home monitoring for a pre-visit review.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
