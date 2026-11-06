@@ -1,6 +1,12 @@
 import type { DayView } from "@/lib/clinician-model";
 
-export function DayDrawer({ day, fromRecords, onClose, onPrev, onNext }: { day: DayView; fromRecords: boolean; onClose: () => void; onPrev: () => void; onNext: () => void }) {
+export function DayDrawer({ day, fromRecords, onClose, onPrev, onNext }: {
+  day: DayView;
+  fromRecords: boolean;
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "color-mix(in srgb, var(--color-neutral-900) 35%, transparent)", zIndex: 20 }} />
@@ -22,7 +28,11 @@ export function DayDrawer({ day, fromRecords, onClose, onPrev, onNext }: { day: 
           {day.submissions.map((submission, index) => (
             <div key={index} style={{ padding: "10px 14px", borderRadius: 16, marginBottom: 8, background: submission.counts ? "var(--color-surface)" : "var(--color-neutral-100)", opacity: submission.blank ? 0.65 : 1 }}>
               <div style={{ fontWeight: 700, fontSize: 13 }}>{submission.time}{submission.counts ? " · used in the summary" : ""}</div>
-              <div className="muted" style={{ fontSize: 13 }}>{submission.blank ? "Opened, no answers" : (fromRecords ? submission.detailLines : submission.lines).join(" · ") || "Responses shown in the table"}</div>
+              <div className="muted" style={{ fontSize: 13 }}>
+                {submission.blank
+                  ? "Opened, no answers"
+                  : (fromRecords ? submission.detailLines : submission.lines).join(" · ") || "Responses shown in the table"}
+              </div>
             </div>
           ))}
         </section>
