@@ -6,6 +6,9 @@
 # testing
 /coverage
 
+# extracted local dataset (the source archive remains tracked)
+/datasets/smarthome-dataset/
+
 # Next.js build output
 /.next/
 /out/
