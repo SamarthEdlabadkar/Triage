@@ -1,6 +1,6 @@
 import { ClinicianApp } from "@/components/clinician/ClinicianApp";
 import { buildClinicianModel, type PatientChoice } from "@/lib/clinician-model";
-import { listPatients, loadGroundTruth, loadPatient, loadTrackersForPatient } from "@/lib/load-data";
+import { listPatientFiles, loadGroundTruth, loadPatient, loadTrackersForPatient } from "@/lib/load-data";
 
 export default async function Page({
   searchParams,
@@ -8,19 +8,22 @@ export default async function Page({
   searchParams: Promise<{ patient?: string; tracker?: string }>;
 }) {
   const params = await searchParams;
-  const patients: PatientChoice[] = await listPatients();
-  const files = patients.map((patient) => patient.file);
-  const file = params.patient && files.includes(params.patient) ? params.patient : files[0];
+  const files = await listPatientFiles();
+  const patients: PatientChoice[] = [];
 
-  if (!file) {
-    return (
-      <main style={{ padding: 32 }}>
-        <h1>No patients in the database</h1>
-        <p>Set MONGODB_URI in .env.local, then run npm run seed.</p>
-      </main>
-    );
+  for (const file of files) {
+    const document = await loadPatient(file);
+    patients.push({
+      file,
+      name: document.displayName,
+      trackers: document.assignedTrackers.map((tracker) => ({
+        id: tracker.trackerId,
+        name: tracker.trackerName,
+      })),
+    });
   }
 
+  const file = params.patient && files.includes(params.patient) ? params.patient : files[0];
   const patient = await loadPatient(file);
   const trackers = await loadTrackersForPatient(patient);
   const tracker = trackers.find((item) => item.trackerId === params.tracker) ?? trackers[0];
