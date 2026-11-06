@@ -106,6 +106,7 @@
   white-space: normal;
 }
 .records-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.records-downloads { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 .records-filter-panel { font-size: 12px; }
 .records-filter-panel summary { cursor: pointer; font-weight: 700; list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--color-divider); border-radius: 9px; background: var(--color-neutral-100); }
 .records-filter-panel summary::-webkit-details-marker { display: none; }

@@ -9,6 +9,7 @@ import {
   type DayView,
   type PatientChoice,
 } from "@/lib/clinician-model";
+import { buildRecordsExport, type RecordsExport } from "@/lib/record-export";
 
 type Audience = "clinician" | "patient";
 type View = "overview" | "timeline" | "ask" | "summary";
@@ -55,6 +56,60 @@ function download(name: string, text: string, type: string) {
   link.download = name;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function downloadBlob(name: string, blob: Blob) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+async function downloadRecordsExcel(name: string, table: RecordsExport) {
+  const XLSX = await import("xlsx");
+  const sheet = XLSX.utils.aoa_to_sheet([
+    [table.title],
+    ...table.lines.map((line) => [line]),
+    [],
+    table.headers,
+    ...table.rows,
+  ]);
+  sheet["!cols"] = table.headers.map((header) => ({ wch: Math.min(48, Math.max(header.length + 2, 16)) }));
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Daily records");
+  const data = XLSX.write(book, { bookType: "xlsx", type: "array" }) as number[];
+  downloadBlob(name, new Blob([new Uint8Array(data)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+}
+
+async function downloadRecordsPdf(name: string, table: RecordsExport) {
+  const { jsPDF } = await import("jspdf");
+  const { autoTable } = await import("jspdf-autotable");
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+  const margin = 36;
+  const width = doc.internal.pageSize.getWidth() - margin * 2;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(48, 42, 32);
+  doc.text(table.title, margin, 40);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  let y = 58;
+  for (const line of table.lines) {
+    const wrapped = doc.splitTextToSize(line, width) as string[];
+    doc.text(wrapped, margin, y);
+    y += wrapped.length * 12;
+  }
+  autoTable(doc, {
+    startY: y + 8,
+    head: [table.headers],
+    body: table.rows,
+    styles: { font: "helvetica", fontSize: 8, cellPadding: 4, overflow: "linebreak", textColor: [48, 42, 32] },
+    headStyles: { fillColor: [143, 65, 14], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [248, 241, 230] },
+    margin: { left: margin, right: margin },
+  });
+  doc.save(name);
 }
 
 function slotStyle(slot: "taken" | "open" | undefined) {
@@ -657,6 +712,8 @@ function Plan({ model }: { model: ClinicianModel }) {
 
 function Records({ model, onOpen }: { model: ClinicianModel; onOpen: (index: number) => void }) {
   const [filters, setFilters] = useState({ date: "", feeling: "", symptoms: "", med: "", fev1: "", entries: "" });
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const days = [...model.days].reverse().filter((day) => day.entries > 0);
   const showFeeling = days.some((day) => Boolean(day.feeling));
   const showMed = Boolean(model.dailyMedName) && days.some((day) => day.slots.length > 0);
@@ -691,13 +748,45 @@ function Records({ model, onOpen }: { model: ClinicianModel; onOpen: (index: num
       && (!filters.entries || day.entries === Number(filters.entries));
   });
   const setFilter = (key: keyof typeof filters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
+  const recordsExport = buildRecordsExport({
+    patientName: model.patient.name,
+    age: model.patient.age,
+    trackerName: model.patient.trackerName,
+    rangeLabel: model.rangeLabel,
+    dailyMedName: model.dailyMedName,
+    showFeeling,
+    showMed,
+    showFev1,
+    shown: filteredDays,
+    totalWithEntries: days.length,
+  });
+  const exportBase = `${model.patient.file.replace(/\.json$/i, "")}-daily-records`;
+  const saveTable = (kind: "csv" | "excel" | "pdf") => {
+    setExportError(null);
+    if (kind === "csv") {
+      download(`${exportBase}.csv`, recordsExport.csv, "text/csv;charset=utf-8");
+      return;
+    }
+    setExporting(kind);
+    const task = kind === "excel"
+      ? downloadRecordsExcel(`${exportBase}.xlsx`, recordsExport)
+      : downloadRecordsPdf(`${exportBase}.pdf`, recordsExport);
+    void task
+      .catch(() => setExportError(kind === "excel" ? "Excel file could not be created." : "PDF could not be created."))
+      .finally(() => setExporting(null));
+  };
   return (
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
         <h3 style={{ margin: 0, fontSize: 21 }}>Daily records</h3>
         <span className="muted" style={{ fontSize: 13 }}>Select a row for submissions, doses, and spirometer blows</span>
-        <button className="btn btn-secondary" type="button" style={{ marginLeft: "auto" }} onClick={() => download(`${model.patient.file.replace(".json", "")}-daily.csv`, model.csv, "text/csv")}>Download CSV</button>
+        <div className="records-downloads">
+          <button className="btn btn-secondary" type="button" aria-label="Download the records in this table as CSV" disabled={exporting !== null} onClick={() => saveTable("csv")}>CSV</button>
+          <button className="btn btn-secondary" type="button" aria-label="Download the records in this table as Excel" disabled={exporting !== null} onClick={() => saveTable("excel")}>{exporting === "excel" ? "Excel…" : "Excel"}</button>
+          <button className="btn btn-secondary" type="button" aria-label="Download the records in this table as PDF" disabled={exporting !== null} onClick={() => saveTable("pdf")}>{exporting === "pdf" ? "PDF…" : "PDF"}</button>
+        </div>
       </div>
+      {exportError ? <p role="alert" className="muted" style={{ margin: 0, fontSize: 13 }}>{exportError}</p> : null}
       <div className="records-tools">
         <details className="records-filter-panel">
           <summary>Filters{activeFilters ? ` (${activeFilters})` : ""}</summary>
