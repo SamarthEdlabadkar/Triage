@@ -1,68 +1,55 @@
-/* SMART@Home clinician dashboard — design tokens from Brand Guide v2 (Cincinnati Children’s palette). */
-@import url("https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap");
+/* Organic — warm paper, clay and moss. Tokens and the component classes the clinician design uses. */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;600;700&display=swap");
 
 :root {
-  --color-bg: #f1f4f7;
-  --color-surface: #ffffff;
-  --color-text: #1c2430;
-  --color-accent: #9d2d73;
-  --color-accent-2: #408214;
-  --color-divider: color-mix(in srgb, #1c2430 14%, transparent);
+  --color-bg: #f5ead8;
+  --color-surface: #fffaf4;
+  --color-text: #302a20;
+  --color-accent: #8f410e;
+  --color-accent-2: #1b6c3a;
+  --color-divider: #e3d2ba;
 
-  --color-neutral-100: #f5f8fa;
-  --color-neutral-200: #e8eef2;
-  --color-neutral-300: #d4dde4;
-  --color-neutral-400: #b3c0ca;
-  --color-neutral-500: #8c9ba7;
-  --color-neutral-600: #6b7a86;
-  --color-neutral-700: #52606b;
-  --color-neutral-800: #3a4650;
-  --color-neutral-900: #232d35;
+  --color-neutral-100: #f8f1e6;
+  --color-neutral-200: #f0e7d6;
+  --color-neutral-300: #d9d0bf;
+  --color-neutral-400: #b6ad9d;
+  --color-neutral-500: #9a9181;
+  --color-neutral-600: #6a6255;
+  --color-neutral-700: #605a4e;
+  --color-neutral-800: #484236;
+  --color-neutral-900: #302a20;
 
-  --color-accent-100: #fbeff6;
-  --color-accent-200: #f3d5e7;
-  --color-accent-300: #e4aacd;
-  --color-accent-400: #c76aa5;
-  --color-accent-500: #9d2d73;
-  --color-accent-600: #85245f;
-  --color-accent-700: #6d1d4e;
-  --color-accent-800: #53163c;
-  --color-accent-900: #3a0f2a;
+  --color-accent-100: #fde8dc;
+  --color-accent-200: #f6d0bc;
+  --color-accent-300: #f0b08a;
+  --color-accent-400: #ec9668;
+  --color-accent-500: #cd7a4d;
+  --color-accent-600: #ac5c2e;
+  --color-accent-700: #8f410e;
+  --color-accent-800: #722700;
+  --color-accent-900: #43210e;
 
-  --color-accent-2-100: #eef7e6;
-  --color-accent-2-200: #d8ecc6;
-  --color-accent-2-300: #b6da95;
-  --color-accent-2-400: #87bb5b;
-  --color-accent-2-500: #5c9a2e;
-  --color-accent-2-600: #408214;
-  --color-accent-2-700: #336a10;
-  --color-accent-2-800: #26500c;
-  --color-accent-2-900: #1a3708;
+  --color-accent-2-100: #e7f4ea;
+  --color-accent-2-200: #cfe8d4;
+  --color-accent-2-300: #a8d4b4;
+  --color-accent-2-400: #76c28b;
+  --color-accent-2-500: #5aa570;
+  --color-accent-2-600: #3a8753;
+  --color-accent-2-700: #1b6c3a;
+  --color-accent-2-800: #005222;
+  --color-accent-2-900: #16321f;
 
-  --color-blue-100: #eaf4f9;
-  --color-blue-200: #d0e6f0;
-  --color-blue-300: #a9d1e2;
-  --color-blue-400: #63aac8;
-  --color-blue-500: #4396b9;
-  --color-blue-600: #2f84a8;
-  --color-blue-700: #236a89;
-  --color-blue-800: #1a5068;
-  --color-blue-900: #113647;
-
-  --color-warn-100: var(--color-accent-100);
-  --color-warn-800: var(--color-accent-800);
-
-  --font-heading: "Caprasimo", "Iowan Old Style", Georgia, serif;
-  --font-heading-weight: 400;
-  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-heading: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-heading-weight: 500;
+  --font-body: "Source Sans 3", "Segoe UI", sans-serif;
 
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 28px;
 
-  --shadow-sm: 0 1px 2px rgba(28, 36, 48, 0.08);
-  --shadow-md: 0 2px 10px rgba(28, 36, 48, 0.08);
-  --shadow-lg: 0 12px 32px rgba(28, 36, 48, 0.18);
+  --shadow-sm: 0 1px 2px rgb(48 42 32 / 0.06), 0 6px 16px rgb(48 42 32 / 0.05);
+  --shadow-md: 0 12px 32px rgb(48 42 32 / 0.1);
+  --shadow-lg: -18px 0 48px rgb(48 42 32 / 0.16);
 }
 
 *,
@@ -98,7 +85,7 @@ h5,
 h6 {
   font-family: var(--font-heading);
   font-weight: var(--font-heading-weight);
-  line-height: 1.25;
+  line-height: 1.12;
   letter-spacing: -0.02em;
 }
 
@@ -111,10 +98,8 @@ a {
   text-underline-offset: 3px;
 }
 
-@media (hover: hover) {
-  a:hover {
-    color: var(--color-accent-800);
-  }
+a:hover {
+  color: var(--color-accent-800);
 }
 
 :focus {
@@ -127,7 +112,7 @@ a {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-accent-300) 45%, transparent);
+  background: color-mix(in srgb, var(--color-accent-400) 45%, transparent);
 }
 
 button,
@@ -164,35 +149,29 @@ input {
 
 .btn-primary {
   background: var(--color-accent-700);
-  color: #fff;
+  color: var(--color-bg);
   border-color: transparent;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-800);
 }
 
 .btn-secondary {
   background: var(--color-surface);
-  border-color: var(--color-neutral-600);
+  border-color: var(--color-divider);
+}
+
+.btn-secondary:hover {
+  background: var(--color-neutral-100);
 }
 
 .btn-ghost {
   color: var(--color-accent-800);
 }
 
-@media (hover: hover) {
-  .btn-primary:hover {
-    background: var(--color-accent-800);
-  }
-
-  .btn-secondary:hover {
-    background: var(--color-neutral-100);
-  }
-
-  .btn-ghost:hover {
-    background: var(--color-neutral-200);
-  }
-
-  .table tbody tr:hover {
-    background: var(--color-neutral-100);
-  }
+.btn-ghost:hover {
+  background: var(--color-neutral-200);
 }
 
 .btn-icon {
@@ -229,7 +208,7 @@ input {
 
 .tag-outline {
   background: transparent;
-  border: 1px solid var(--color-neutral-600);
+  border: 1px solid var(--color-divider);
   color: var(--color-neutral-800);
 }
 
@@ -237,7 +216,6 @@ input {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  font-variant-numeric: tabular-nums;
 }
 
 .table th {
@@ -254,6 +232,10 @@ input {
   padding: 10px 12px;
   border-bottom: 1px solid var(--color-divider);
   vertical-align: top;
+}
+
+.table tbody tr:hover {
+  background: var(--color-neutral-100);
 }
 
 @media (prefers-reduced-motion: reduce) {
