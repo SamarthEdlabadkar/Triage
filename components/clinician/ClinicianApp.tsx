@@ -158,7 +158,7 @@ export function ClinicianApp({
         <nav className="tabs" aria-label="Pages">
             {([
               ["overview", "Overview", "Overview"],
-              ["timeline", "Timeline & records", "Timeline"],
+              ["timeline", "Records", "Records"],
               ["ask", "Ask the data", "Ask"],
               ["summary", "Visit summary", "Summary"],
             ] as const).map(([id, label, shortLabel]) => (
@@ -216,7 +216,6 @@ export function ClinicianApp({
         </div>
       </header>
 
-      
       <main className="page-main">
         {view === "overview" && audience === "clinician" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -240,8 +239,7 @@ export function ClinicianApp({
         {view === "overview" && audience === "patient" ? <PatientView model={model} chart={chart} onOpen={openDay} /> : null}
         {view === "timeline" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <Timeline model={model} chart={chart} onOpen={openDay} />
-            <Records model={model} onOpen={openDay} />
+            <Records key={`${model.patient.file}:${model.patient.trackerId}`} model={model} onOpen={openDay} />
           </div>
         ) : null}
         {view === "ask" ? (
@@ -657,7 +655,24 @@ function Plan({ model }: { model: ClinicianModel }) {
 }
 
 function Records({ model, onOpen }: { model: ClinicianModel; onOpen: (index: number) => void }) {
-  const eventLabel = model.patient.kind === "migraine" ? "Headache" : "Rescue";
+  const [filters, setFilters] = useState({ date: "", feeling: "", symptoms: "", med: "", fev1: "", entries: "" });
+  const days = [...model.days].reverse().filter((day) => day.entries > 0);
+  const showFeeling = days.some((day) => Boolean(day.feeling));
+  const showMed = Boolean(model.dailyMedName) && days.some((day) => day.slots.length > 0);
+  const showFev1 = days.some((day) => day.fev1 != null);
+  const feelings = [...new Set(days.map((day) => day.feeling).filter((value): value is string => Boolean(value)))].sort();
+  const activeFilters = [filters.date, showFeeling && filters.feeling, filters.symptoms, showMed && filters.med, showFev1 && filters.fev1, filters.entries].filter(Boolean).length;
+  const filteredDays = days.filter((day) => {
+    const medStatus = !day.slots.length ? "unscheduled" : day.slots.every((slot) => slot === "taken") ? "all" : day.slots.some((slot) => slot === "taken") ? "some" : "none";
+    const fev1 = day.fev1 == null ? "none" : `${day.fev1.toFixed(2)} ${day.fevOk ? "passed" : "flagged"}`;
+    return `${day.dow} ${day.short}`.toLowerCase().includes(filters.date.toLowerCase())
+      && (!showFeeling || !filters.feeling || (day.feeling ?? "none") === filters.feeling)
+      && (day.symptoms.join(", ") || "none").toLowerCase().includes(filters.symptoms.toLowerCase())
+      && (!showMed || !filters.med || medStatus === filters.med)
+      && (!showFev1 || fev1.toLowerCase().includes(filters.fev1.toLowerCase()))
+      && (!filters.entries || day.entries === Number(filters.entries));
+  });
+  const setFilter = (key: keyof typeof filters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
   return (
     <article className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
@@ -665,26 +680,43 @@ function Records({ model, onOpen }: { model: ClinicianModel; onOpen: (index: num
         <span className="muted" style={{ fontSize: 13 }}>Select a row for submissions, doses, and spirometer blows</span>
         <button className="btn btn-secondary" type="button" style={{ marginLeft: "auto" }} onClick={() => download(`${model.patient.file.replace(".json", "")}-daily.csv`, model.csv, "text/csv")}>Download CSV</button>
       </div>
+      <div className="records-tools">
+        <details className="records-filter-panel">
+          <summary>Filters{activeFilters ? ` (${activeFilters})` : ""}</summary>
+          <div className="records-filters">
+            <label>Date<input aria-label="Filter by date" value={filters.date} onChange={(event) => setFilter("date", event.target.value)} placeholder="e.g. Nov 5" /></label>
+            {showFeeling ? <label>Feeling<select aria-label="Filter by feeling" value={filters.feeling} onChange={(event) => setFilter("feeling", event.target.value)}><option value="">Any</option>{feelings.map((feeling) => <option key={feeling} value={feeling}>{feeling}</option>)}<option value="none">No answer</option></select></label> : null}
+            <label>Symptoms<input aria-label="Filter by symptoms" value={filters.symptoms} onChange={(event) => setFilter("symptoms", event.target.value)} placeholder="Search symptoms" /></label>
+            {showMed ? <label>Daily med<select aria-label="Filter by daily med" value={filters.med} onChange={(event) => setFilter("med", event.target.value)}><option value="">Any</option><option value="all">All recorded</option><option value="some">Some recorded</option><option value="none">None recorded</option><option value="unscheduled">Not scheduled</option></select></label> : null}
+            {showFev1 ? <label>FEV1<input aria-label="Filter by FEV1" value={filters.fev1} onChange={(event) => setFilter("fev1", event.target.value)} placeholder="Value or flagged" /></label> : null}
+            <label>Entries<input aria-label="Filter by entries" type="number" min="1" value={filters.entries} onChange={(event) => setFilter("entries", event.target.value)} placeholder="Count" /></label>
+            <button className="btn btn-ghost" type="button" onClick={() => setFilters({ date: "", feeling: "", symptoms: "", med: "", fev1: "", entries: "" })}>Clear filters</button>
+          </div>
+        </details>
+        {showMed ? <span className="muted" style={{ fontSize: 12 }}>✓ administration recorded · ✕ none recorded</span> : null}
+      </div>
       {/* Explicit roles: the phone layout restyles these rows as stacked cards, which drops native table semantics. */}
       <div className="scroll-x">
         <table className="table records-table" role="table">
           <thead role="rowgroup">
             <tr role="row">
-              <th role="columnheader">Date</th><th role="columnheader">Feeling</th><th role="columnheader">Symptoms</th><th role="columnheader">{eventLabel}</th><th role="columnheader">Daily med</th><th role="columnheader">FEV1</th><th role="columnheader">Entries</th>
+              <th role="columnheader">Date</th>{showFeeling ? <th role="columnheader">Feeling</th> : null}<th role="columnheader">Symptoms</th>{showMed ? <th role="columnheader" className="rec-med-heading">Daily med<small className="record-med-name">{model.dailyMedName}</small></th> : null}{showFev1 ? <th role="columnheader">FEV1</th> : null}<th role="columnheader">Entries</th>
             </tr>
           </thead>
           <tbody role="rowgroup">
-            {[...model.days].reverse().map((day) => (
+            {filteredDays.map((day) => (
               <tr key={day.date} role="row" onClick={() => onOpen(model.days.indexOf(day))} style={{ cursor: "pointer" }}>
                 <td role="cell" className="rec-date" style={{ fontWeight: 700 }}>{day.dow} {day.short}</td>
-                <td role="cell" data-label="Feeling">{day.feeling ?? "—"}</td>
+                {showFeeling ? <td role="cell" data-label="Feeling">{day.feeling ?? "—"}</td> : null}
                 <td role="cell" className="rec-wide" data-label="Symptoms" style={{ fontSize: 13 }}>{day.logged ? day.symptoms.join(", ") || "None" : "—"}</td>
-                <td role="cell" data-label={eventLabel}>{model.patient.kind === "migraine" ? (day.headache == null ? "—" : day.headache ? "Yes" : "No") : (day.rescue ?? "—")}</td>
-                <td role="cell" className="rec-med" data-label="Daily med">{day.slots.length ? day.slots.map((slot) => (slot === "taken" ? "Marked" : "Not marked")).join(" / ") : "—"}</td>
-                <td role="cell" data-label="FEV1">{day.fev1 == null ? "—" : `${day.fev1.toFixed(2)} L${day.fevOk ? "" : " · flagged"}`}</td>
+                {showMed ? <td role="cell" className="rec-med" data-label="Daily med" aria-label={`${model.dailyMedName}: ${day.slots.length ? day.slots.map((slot, index) => `dose ${index + 1} ${slot === "taken" ? "recorded" : "not recorded"}`).join(", ") : "not scheduled"}`}>
+                  {day.slots.length ? day.slots.map((slot) => (slot === "taken" ? "✓" : "✕")).join(" / ") : "—"}
+                </td> : null}
+                {showFev1 ? <td role="cell" data-label="FEV1">{day.fev1 == null ? "—" : `${day.fev1.toFixed(2)} L${day.fevOk ? "" : " · flagged"}`}</td> : null}
                 <td role="cell" data-label="Entries">{day.entries}</td>
               </tr>
             ))}
+            {filteredDays.length === 0 ? <tr role="row"><td role="cell" colSpan={3 + Number(showFeeling) + Number(showMed) + Number(showFev1)}>No records match these filters.</td></tr> : null}
           </tbody>
         </table>
       </div>
