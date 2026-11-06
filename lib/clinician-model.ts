@@ -154,7 +154,6 @@ export type ClinicianModel = {
   doseLegend: { taken: number; open: number };
   suggestions: string[];
   summary: Array<{ title: string; text: string }>;
-  trackerSummary: Array<{ title: string; question: string; text: string }>;
   summaryText: string;
   csv: string;
 };
@@ -928,34 +927,11 @@ export function buildClinicianModel(
     text: "Medication records show what was marked, not a verified dose. A missing record is not a confirmed miss. Home data are not part of the medical record.",
   });
 
-  const trackerSummary = tracker.questions.map((item) => {
-    const answeredDays = days.flatMap((day) => {
-      if (!day.active) return [];
-      const submissions = (logs.get(day.date)?.trackerResponses ?? [])
-        .filter((submission) => submission.trackerId === tracker.trackerId)
-        .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
-      const value = lastValue(submissions, item.questionId);
-      return value ? [{ day, value }] : [];
-    });
-    const latestAnswer = answeredDays.at(-1);
-    const answer = latestAnswer ? formatAnswer(item, latestAnswer.value) : null;
-    return {
-      title: item.metricKey ? humanize(item.metricKey.replace(/_/g, " ")) : item.text,
-      question: item.text,
-      text: latestAnswer
-        ? `Latest reported: ${answer}${item.unit && item.type === "number" ? ` ${item.unit}` : ""} on ${latestAnswer.day.short}. Answered on ${answeredDays.length} of ${activeDays.length} active days.`
-        : `No answer recorded in this ${WINDOW}-day window.`,
-    };
-  });
-
   const summaryText = [
-    `SMART@Home visit summary — ${patient.displayName} (synthetic) · ${tracker.name}`,
+    `SMART@Home visit summary — ${patient.displayName} (synthetic), ${patient.age} y, ${tracker.name}`,
     `${short(start)} – ${short(END)}, 2026 · visit ${short(VISIT)}, 2026`,
     "",
     ...summary.map((section) => `${section.title}: ${section.text}`),
-    "",
-    "Tracker responses (latest reported answer for each question)",
-    ...trackerSummary.map((item) => `${item.title} — ${item.question}: ${item.text}`),
   ].join("\n");
 
   const csvHead = [
@@ -1060,7 +1036,6 @@ export function buildClinicianModel(
     doseLegend: { taken: allDoses.taken, open: allDoses.open },
     suggestions,
     summary,
-    trackerSummary,
     summaryText,
     csv,
   };

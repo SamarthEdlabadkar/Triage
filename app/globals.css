@@ -46,21 +46,9 @@
 .compare-row { display: grid; grid-template-columns: minmax(120px, 170px) minmax(0, 1fr); gap: 12px; align-items: center; }
 .review-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 12px; }
 .med-cell { padding: 5px; }
-.summary-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; align-items: start; }
-.summary-content { display: grid; gap: 28px; min-width: 0; }
-.summary-heading { padding: 4px 2px 0; }
-.summary-title { margin: 4px 0 0; font-size: 28px; }
-.summary-context { margin: 4px 0 0; font-size: 13px; }
-.summary-section-title { margin: 0 0 12px; font: 700 19px var(--font-heading); }
-.summary-section-note { margin: -4px 0 14px; font-size: 13px; }
-.summary-widget-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.summary-widget { border: 1px solid var(--color-divider); }
-.summary-widget h4 { margin: 0 0 8px; font: 700 15px var(--font-heading); }
-.summary-widget p { margin: 0; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
-.summary-widget .summary-question { margin-bottom: 10px; font-size: 12px; }
-.summary-export { display: flex; flex-direction: column; gap: 10px; }
-.summary-export h3 { margin: 0 0 2px; font: 700 18px var(--font-heading); }
-.summary-export p { margin: 4px 0 0; font-size: 12px; line-height: 1.5; }
+.summary-doc { padding: 32px 36px; }
+.summary-title { font-size: 28px; }
+.summary-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
 .drawer { padding: 24px; overscroll-behavior: contain; }
 
 .tl-row { display: grid; grid-template-columns: var(--tl-label-width, 110px) minmax(0, 1fr); align-items: center; }
@@ -301,7 +289,6 @@
 .patient-view-card p.muted { margin-top: 12px; font-size: 13px; }
 
 @media (max-width: 980px) {
-  .summary-layout { grid-template-columns: minmax(0, 1fr); }
   .board { grid-template-columns: minmax(0, 1fr); }
   .span-12, .span-6 { grid-column: auto; }
   .split { grid-template-columns: minmax(0, 1fr) !important; }
@@ -379,8 +366,9 @@
   .tl-cells > button { min-height: 32px; }
   .chart-point { width: 10px; height: 10px; margin: -5px 0 0 -5px; }
 
+  .summary-doc { padding: 20px 16px; }
   .summary-title { font-size: 23px; }
-  .summary-widget-grid { grid-template-columns: minmax(0, 1fr); }
+  .summary-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .drawer { padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
   .drawer .table th, .drawer .table td { padding-left: 6px; padding-right: 6px; }
 
